@@ -32,7 +32,7 @@ public class PrinterProtocol {
     public static byte[] getPrinterCutPaperProtocol(){
 //        byte[] res = new byte[]{0x02,'P','C','2',0x01,0x00,0x00};
         byte[] res = new byte[]{'B','C','U','T',0x00,0x00,0x00,0x00,0x00,0x00};
-        return Common.pakageOneProtocol(res);
+        return res;
     }
     //查询打印机状态
     public static byte[] getPrinterStateProtocol(){
