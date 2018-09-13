@@ -301,7 +301,7 @@ public class MyTools {
             return;
         }
         RequestParams params = null;
-        if (one.getType() == UploadData.PATH_TYPE){
+        if (one.getType() == UploadData.PATH_TYPE || one.getData().equals("")){
             params = new RequestParams(YinlianHttpRequestUrl.UPLOADFILEURL);
         }else{
             params = new RequestParams(YinlianHttpRequestUrl.UPLOADBASE64URL);

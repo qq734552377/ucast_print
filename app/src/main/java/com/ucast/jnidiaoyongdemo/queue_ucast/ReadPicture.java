@@ -21,7 +21,7 @@ import com.ucast.jnidiaoyongdemo.tools.SavePasswd;
 public class ReadPicture {
 
     private boolean _mDispose;
-    public static int MIN_PACKAGE_HEGHT = 251;
+    public static int MIN_PACKAGE_HEGHT = 21;
 
     private int ONE_PAKGE_COUNT = (MIN_PACKAGE_HEGHT - 1) * (SomeBitMapHandleWay.PRINT_WIDTH / 8);
 
@@ -169,30 +169,30 @@ public class ReadPicture {
         int package_total = PackageTotal(btData.length); //获取总包数
 
 
-        byte[] btHead = HeadBytes(package_total);//包头
+        byte[] btHead = headBytes(package_total);//包头
         PictureModel model = new PictureModel();
         int sum = btData.length % ONE_PAKGE_COUNT;
         byte[] sum_L_H = new byte[2];
-        sum_L_H[0] = (byte) ((sum + 4) & 0Xff);
-        sum_L_H[1] = (byte) (((sum + 4) & 0Xff00) >> 8);
+        sum_L_H[0] = (byte) ((sum) & 0Xff);
+        sum_L_H[1] = (byte) (((sum) & 0Xff00) >> 8);
         int t = 0;
         for (t = 0; t < btData.length / ONE_PAKGE_COUNT; t++) {
             byte[] content_senf = join(btHead, content_send_data(btData, t * ONE_PAKGE_COUNT, ONE_PAKGE_COUNT));
-            content_senf[8 + 1] = (byte) ((t + 1) & 0Xff);
-            content_senf[9 + 1] = (byte) (((t + 1) & 0Xff00) >> 8);
-            content_senf[4 + 1] = (byte) ((ONE_PAKGE_COUNT + 4) & 0Xff);
-            content_senf[5 + 1] = (byte) (((ONE_PAKGE_COUNT + 4) & 0Xff00) >> 8);
+            content_senf[6] = (byte) ((t + 1) & 0Xff);
+            content_senf[7] = (byte) (((t + 1) & 0Xff00) >> 8);
+            content_senf[8] = (byte) ((ONE_PAKGE_COUNT ) & 0Xff);
+            content_senf[9] = (byte) (((ONE_PAKGE_COUNT ) & 0Xff00) >> 8);
 
-            model.BufferPicture.add(Common.pakageOneProtocol(content_senf));
+            model.BufferPicture.add(content_senf);
         }
         if (btData.length % ONE_PAKGE_COUNT != 0) {
             byte[] content_senf = join(btHead, content_send_data(btData, t * ONE_PAKGE_COUNT, sum));
-            content_senf[8 + 1] = (byte) ((t + 1) & 0Xff);
-            content_senf[9 + 1] = (byte) (((t + 1) & 0Xff00) >> 8);
-            content_senf[4 + 1] = sum_L_H[0];
-            content_senf[5 + 1] = sum_L_H[1];
+            content_senf[6] = (byte) ((t + 1) & 0Xff);
+            content_senf[7] = (byte) (((t + 1) & 0Xff00) >> 8);
+            content_senf[8] = sum_L_H[0];
+            content_senf[9] = sum_L_H[1];
 
-            model.BufferPicture.add(Common.pakageOneProtocol(content_senf));
+            model.BufferPicture.add(content_senf);
         }
 
 

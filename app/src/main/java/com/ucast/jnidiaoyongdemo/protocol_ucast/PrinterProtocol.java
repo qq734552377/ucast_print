@@ -30,8 +30,8 @@ public class PrinterProtocol {
     }
     //打印机切纸命令
     public static byte[] getPrinterCutPaperProtocol(){
-        byte[] res = new byte[]{0x02,'P','C','2',0x01,0x00,0x00};
-//        byte[] res = new byte[]{'B','C','U','T'};
+//        byte[] res = new byte[]{0x02,'P','C','2',0x01,0x00,0x00};
+        byte[] res = new byte[]{'B','C','U','T',0x00,0x00,0x00,0x00,0x00,0x00};
         return Common.pakageOneProtocol(res);
     }
     //查询打印机状态

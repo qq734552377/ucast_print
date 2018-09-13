@@ -31,8 +31,8 @@ public class PrinterSerialRestart {
                         OpenPrint print = new OpenPrint(Config.PrinterSerial);
                         boolean isOpen = print.Open();
                         if (isOpen){
-                            print.Send(PrinterProtocol.getPrinterSwitchOnProtocol());
-                            print.Send(MsCardProtocol.getOpenMsCardProtocol());
+//                            print.Send(PrinterProtocol.getPrinterSwitchOnProtocol());
+//                            print.Send(MsCardProtocol.getOpenMsCardProtocol());
                             MermoyPrinterSerial.Add(print);
                             restart = false;
                         }

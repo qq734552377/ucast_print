@@ -115,10 +115,10 @@ public class UpdateService extends Service {
         copyCfg("ucast.bmp");
         OpenPrint print = new OpenPrint(Config.PrinterSerial);
         boolean isOpen = print.Open();
-        MermoyPrinterSerial.Add(print);
         if (isOpen){
-            print.Send(PrinterProtocol.getPrinterSwitchOnProtocol());
-            print.Send(MsCardProtocol.getOpenMsCardProtocol());
+//            print.Send(PrinterProtocol.getPrinterSwitchOnProtocol());
+//            print.Send(MsCardProtocol.getOpenMsCardProtocol());
+            MermoyPrinterSerial.Add(print);
         }
 
         PrinterSerialRestart.StartTimer();
@@ -461,7 +461,7 @@ public class UpdateService extends Service {
     public void initMedia(){
         if (mediaPlayer == null)
             mediaPlayer = new MediaPlayer();
-        setResource(R.raw.water);
+        setResource(R.raw.beep);
     }
     public void setResource(@RawRes int id){
         AssetFileDescriptor file = getResources().openRawResourceFd(id);

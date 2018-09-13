@@ -118,6 +118,7 @@ public class ListPictureQueue {
             }
             byte[] str = info.BufferPicture.get(0);
             info.setOutTime(SystemClock.elapsedRealtime());
+            info.setCurtNum(1);
             SendPackage.sendToPrinter(str);
             EventBus.getDefault().post(new MoneyBoxEvent(true));
 //            MyTools.writeToFile(EpsonPicture.TEMPBITPATH + File.separator + "templog.txt",System.currentTimeMillis() + " 发送第一张图片的第一包");
@@ -151,6 +152,8 @@ public class ListPictureQueue {
 //        }
         byte[] str = info.BufferPicture.get(curIndex);
         info.setOutTime(SystemClock.elapsedRealtime());
+        if (!isSendAgain)
+            info.setCurtNum(1);
         SendPackage.sendToPrinter(str);
         if(isSendAgain) {
             PrinterSerialRestart.re_send = false;

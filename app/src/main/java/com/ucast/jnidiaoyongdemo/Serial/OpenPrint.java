@@ -288,7 +288,7 @@ public class OpenPrint {
         switch (str) {
             case "PA":  //是否打开打印设备回复
                 ExceptionApplication.gLogger.info("Printer Swtich on!");
-                SendPackage.sendToPrinter(PrinterProtocol.getPrinterStartPrinterProtocol() );
+//                SendPackage.sendToPrinter(PrinterProtocol.getPrinterStartPrinterProtocol() );
                 ListPictureQueue.SendAgain(true);
                 break;
             case "PB":  //是否关闭打印设备回复
@@ -310,7 +310,7 @@ public class OpenPrint {
 
             case "MA"://是否打开磁卡设备回复
                 ExceptionApplication.gLogger.info("MaCard Swtich on!");
-                SendPackage.sendToPrinter(MsCardProtocol.getRegisterMsCardProtocol());
+//                SendPackage.sendToPrinter(MsCardProtocol.getRegisterMsCardProtocol());
                 break;
             case "MB"://是否关闭磁卡设备回复
                 ExceptionApplication.gLogger.info("MaCard Swtich off!");
@@ -330,9 +330,9 @@ public class OpenPrint {
                 break;
             case "MH"://刷卡后通知命令回复
                 ExceptionApplication.gLogger.info("MaCard is working , can get data !");
-                for (int i = 0; i < 3; i++) {
-                    SendPackage.sendToPrinter(MsCardProtocol.getGetDataMsCardByNumProtocol((byte) (i & 0xFF)));
-                }
+//                for (int i = 0; i < 3; i++) {
+//                    SendPackage.sendToPrinter(MsCardProtocol.getGetDataMsCardByNumProtocol((byte) (i & 0xFF)));
+//                }
                 break;
             case "RS"://小CPU即将重启
                 Dispose();
@@ -367,7 +367,7 @@ public class OpenPrint {
                 EventBus.getDefault().postSticky(msSB.toString());
                 EventBus.getDefault().post(new MsCardEvent(3,new String(dataMs)));
                 ExceptionApplication.gLogger.info("Mscard data ----->" + msSB.toString());
-                SendPackage.sendToPrinter(MsCardProtocol.getRegisterMsCardProtocol());
+//                SendPackage.sendToPrinter(MsCardProtocol.getRegisterMsCardProtocol());
                 break;
         }
     }
