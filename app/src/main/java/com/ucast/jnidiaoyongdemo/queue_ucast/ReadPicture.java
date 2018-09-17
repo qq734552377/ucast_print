@@ -21,7 +21,7 @@ import com.ucast.jnidiaoyongdemo.tools.SavePasswd;
 public class ReadPicture {
 
     private boolean _mDispose;
-    public static int MIN_PACKAGE_HEGHT = 21;
+    public static int MIN_PACKAGE_HEGHT = 251;
 
     private int ONE_PAKGE_COUNT = (MIN_PACKAGE_HEGHT - 1) * (SomeBitMapHandleWay.PRINT_WIDTH / 8);
 

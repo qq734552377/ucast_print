@@ -30,7 +30,7 @@ public class HandleEpsonDataByUcastPrint {
                 String p = SomeBitMapHandleWay.compoundOneBitPic(paths);
 //                MyTools.writeToFile(EpsonPicture.TEMPBITPATH + File.separator + "templog.txt",System.currentTimeMillis() + " 拼接完多张图片");
                 // todo ==>>2018.8.28 只能打一张  拼接完在打
-                ReadPictureManage.GetInstance().GetReadPicture(0).Add(new BitmapWithOtherMsg(p,true));
+//                ReadPictureManage.GetInstance().GetReadPicture(0).Add(new BitmapWithOtherMsg(p,true));
                 if (isUpload) {
                     MyTools.uploadFileByQueue(p);
                 }

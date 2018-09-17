@@ -121,11 +121,6 @@ public class ListPictureQueue {
             info.setCurtNum(1);
             SendPackage.sendToPrinter(str);
             EventBus.getDefault().post(new MoneyBoxEvent(true));
-//            MyTools.writeToFile(EpsonPicture.TEMPBITPATH + File.separator + "templog.txt",System.currentTimeMillis() + " 发送第一张图片的第一包");
-//            EventBus.getDefault().post(new MediapalyEvent(R.raw.jiqiang));
-//            ExceptionApplication.gLogger.info(" send First Picture first time： -->" + System.currentTimeMillis());
-//            ExceptionApplication.gLogger.info(" send First Picture first time： " +  MyTools.millisToDateString(System.currentTimeMillis()));
-//            ExceptionApplication.gLogger.info(EpsonParseDemo.printHexString(str));
     }
 
     public static void SendAgain(boolean isSendAgain) {
@@ -141,15 +136,6 @@ public class ListPictureQueue {
             return;
         }
         int curIndex = 0;
-//        if (isSendAgain) {
-//            curIndex = info.getCurtNum();
-//            if (curIndex >= info.BufferPicture.size()){
-//                list.remove(0);
-//                ExceptionApplication.gLogger.info(" 发送当前的包数超过总包数---> " + curIndex + " package");
-//                return;
-//            }
-//            info.setCurtNum(curIndex + 1);//假设送出的一包没有回应时 再次自增长送出数据 改：2018/07/23
-//        }
         byte[] str = info.BufferPicture.get(curIndex);
         info.setOutTime(SystemClock.elapsedRealtime());
         if (!isSendAgain)
@@ -202,20 +188,6 @@ public class ListPictureQueue {
                 SendPackage.sendToPrinter(buffer);
 //                MyTools.writeToFile(EpsonPicture.TEMPBITPATH + File.separator + "templog.txt",System.currentTimeMillis() + " 发送第" + index + "包完成");
             }
-            //todo 不需要的代码//////////
-//            if (baoSize == index) {
-//                if (list.size() <= 0)
-//                    return;
-//                //打完一张图片切纸
-//                if (info.isCutPapper()) {
-//                    SendPackage.sendToPrinter(PrinterProtocol.getPrinterCutPaperProtocol());
-//                }else {
-//                    list.remove(0);
-//                    SendAgain(false);
-//                }
-//                return;
-//            }
-            //todo 不需要的代码//////////
 
             if (baoSize < index | index < 0) {
                 return;

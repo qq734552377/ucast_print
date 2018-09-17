@@ -559,11 +559,11 @@ public class EpsonParseDemo {
                 saveAsBitmapWithByteDataUse1Bit(one.getDatasByte(), one.getWith(), bmpPath);
                 bmpPaths.add(bmpPath);
                 // todo ==>>2018.8.28 只能打一张  拼接完在打
-//                if (i == bitPicLists.size() -1 ) {
-//                    ReadPictureManage.GetInstance().GetReadPicture(0).Add(new BitmapWithOtherMsg(bmpPath,true));
-//                }else{
-//                    ReadPictureManage.GetInstance().GetReadPicture(0).Add(new BitmapWithOtherMsg(bmpPath,false));
-//                }
+                if (i == bitPicLists.size() -1 ) {
+                    ReadPictureManage.GetInstance().GetReadPicture(0).Add(new BitmapWithOtherMsg(bmpPath,true));
+                }else{
+                    ReadPictureManage.GetInstance().GetReadPicture(0).Add(new BitmapWithOtherMsg(bmpPath,false));
+                }
             }
         } catch (Exception e) {
             ExceptionApplication.gLogger.info("paser error --> " +e.toString());

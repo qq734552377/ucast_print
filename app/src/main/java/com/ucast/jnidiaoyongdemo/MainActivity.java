@@ -4,6 +4,8 @@ import android.content.Intent;
 import android.content.res.AssetFileDescriptor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.YuvImage;
 import android.media.MediaPlayer;
 import android.os.Environment;
@@ -104,6 +106,11 @@ public class MainActivity extends AppCompatActivity {
 //                KeyboardSwitch.sendToKeyboard(str);
 //                MyDialog.showDialogWithMsg("这是对话框",114).show();
                 String path = Environment.getExternalStorageDirectory().getPath() + "/ucast.bmp";
+
+//                Bitmap bitmap = Bitmap.createBitmap(SomeBitMapHandleWay.PRINT_WIDTH, 10000, Bitmap.Config.RGB_565);
+//                Canvas canvas = new Canvas(bitmap);
+//                canvas.drawColor(Color.WHITE);
+//                ReadPictureManage.GetInstance().GetReadPicture(0).Add(new BitmapWithOtherMsg(bitmap,false));
 //                String path2 = Environment.getExternalStorageDirectory().getPath() + "/ums.bmp";
 //                Bitmap strBmp = EpsonPicture.getBitMapByStringReturnBigBitmap("这是对话框");
 //                if (strBmp != null) {

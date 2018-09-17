@@ -96,7 +96,7 @@ public class OpenPrint {
             try {
                 int tatal = intput.available();
                 if (tatal <= 0) {
-                    Thread.sleep(5);
+                    Thread.sleep(1);
                     continue;
                 }
                 int len = intput.read(Buffer);
@@ -137,7 +137,7 @@ public class OpenPrint {
             if (item != null) {
                 SendMessage(item);
             } else {
-                Thread.sleep(4);
+                Thread.sleep(1);
             }
         } catch (Exception e) {
 
@@ -171,6 +171,7 @@ public class OpenPrint {
                 return;
             output.write(buffer);
             output.flush();
+//            MyTools.writeToFile(EpsonPicture.TEMPBITPATH + File.separator + "templog.txt",System.currentTimeMillis() + " 发送包完成");
         } catch (IOException e) {
             Dispose();
         }
@@ -367,6 +368,7 @@ public class OpenPrint {
                 EventBus.getDefault().postSticky(msSB.toString());
                 EventBus.getDefault().post(new MsCardEvent(3,new String(dataMs)));
                 ExceptionApplication.gLogger.info("Mscard data ----->" + msSB.toString());
+                EventBus.getDefault().post(new MediapalyEvent(R.raw.beep));
 //                SendPackage.sendToPrinter(MsCardProtocol.getRegisterMsCardProtocol());
                 break;
         }
