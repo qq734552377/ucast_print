@@ -29,6 +29,7 @@ public class ByteArrCache {
     }
 
     public void jointBuffer(byte[] buffer) {
+        MyTools.writePrintLog(EpsonParseDemo.printHexString(buffer));
         if (HandleEpsonDataByUcastPrint.isContainOpenMoneyBox(buffer, EpsonParseDemo.OPENMONEYBOX)) {
             String isOpenMoneyBox = SavePasswd.getInstace().readxml(SavePasswd.ISAUTOMONEYBOX,SavePasswd.OPEN);
             boolean isOPen = isOpenMoneyBox.equals(SavePasswd.OPEN) ? true : false;

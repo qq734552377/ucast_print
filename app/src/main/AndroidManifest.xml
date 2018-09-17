@@ -91,6 +91,8 @@
             android:theme="@style/AppTheme.NoActionBar" />
         <activity
             android:name=".SettingActivity"
+            android:configChanges="orientation|keyboardHidden"
+            android:windowSoftInputMode="stateAlwaysHidden"
             android:screenOrientation="portrait"
             android:theme="@style/AppTheme.NoActionBar" />
         <activity android:name=".advAct.AdvActivity"

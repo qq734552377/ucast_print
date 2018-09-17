@@ -37,6 +37,7 @@ public class SavePasswd {
     public final static String LASTREQUESTTIME = "last_request_time";//最后设备请求服务器的时间
     public final static String LINKWITHPOS = "link_with_pos";//打印机是否与收银设备连接
     public final static String IS58PAPPER = "is58papper";//是否是58的纸张
+    public final static String ISOPENLOG = "isopenlog";//是否开启日志记录
     public final static String OPENPRINT = "open";
     public final static String CLOSEPRINT = "close";
     public final static String OPEN = "open";

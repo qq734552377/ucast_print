@@ -42,7 +42,7 @@ public class NetPrinterHandle extends ChannelInboundHandlerAdapter {
             buff.readBytes(buffer);
             if (packageMessage == null)
                 return;
-            MyTools.writeToFile(EpsonPicture.TEMPBITPATH + File.separator + "netPrint.txt",EpsonParseDemo.printHexString(buffer) );
+//            MyTools.writeToFile(EpsonPicture.TEMPBITPATH + File.separator + "netPrint.txt",EpsonParseDemo.printHexString(buffer) );
 //            MyTools.writeToFile(EpsonPicture.TEMPBITPATH + File.separator + "netPrintStr.txt",new String(buffer) + "\n");
             Channel channel = ctx.channel();
             channel.writeAndFlush(buffer);

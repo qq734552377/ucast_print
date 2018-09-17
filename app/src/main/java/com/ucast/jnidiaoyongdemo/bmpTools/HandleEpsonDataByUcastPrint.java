@@ -82,7 +82,7 @@ public class HandleEpsonDataByUcastPrint {
 
     public static boolean isContainOpenMoneyBox(byte[] src,byte[] item){
         boolean isContain = false;
-        int len = src.length > 200 ? 200 : src.length;
+        int len = src.length;//> 200 ? 200 : src.length;
         for (int i = 0; i < len  ; i++) {
             if (src[i] == item[1] && i > 0){
                 if (src[i-1] == item[0]){

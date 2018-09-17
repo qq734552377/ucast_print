@@ -739,4 +739,12 @@ public class MyTools {
             return false;
         }
     }
+
+    //打印数据的日志记录
+    public static void writePrintLog(String log){
+        String isopenstr = SavePasswd.getInstace().getIp(SavePasswd.ISOPENLOG,SavePasswd.CLOSE);
+        if (isopenstr.equals(SavePasswd.OPEN)){
+            MyTools.writeToFile(Config.PRINTLOGATH,log);
+        }
+    }
 }

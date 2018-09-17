@@ -4,10 +4,13 @@ import android.graphics.BitmapFactory;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.RadioGroup;
+import android.widget.Switch;
 import android.widget.VideoView;
 
+import com.ucast.jnidiaoyongdemo.Model.Config;
 import com.ucast.jnidiaoyongdemo.bmpTools.EpsonPicture;
 import com.ucast.jnidiaoyongdemo.testActs.BaseNavActivity;
 import com.ucast.jnidiaoyongdemo.tools.MyTools;
@@ -30,6 +33,8 @@ public class SettingActivity extends BaseNavActivity {
     EditText money_box_time;
     @ViewInject(R.id.select_papper)
     RadioGroup select_papper;
+    @ViewInject(R.id.st_open_log)
+    Switch open_log;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,6 +63,22 @@ public class SettingActivity extends BaseNavActivity {
         upload_pic_host.setText(save.readxml(SavePasswd.BMPUPLOADHOST,YinlianHttpRequestUrl.ANALYZEHOST));
         heart_beat_host.setText(save.readxml(SavePasswd.HEARTBEATHOST,YinlianHttpRequestUrl.HEART_BEAT_HOST));
         money_box_time.setText(save.getIp(SavePasswd.MONEYTIME,"100"));
+        open_log.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if (isChecked){
+                    SavePasswd.getInstace().save(SavePasswd.ISOPENLOG,SavePasswd.OPEN);
+                }else{
+                    SavePasswd.getInstace().save(SavePasswd.ISOPENLOG,SavePasswd.CLOSE);
+                }
+            }
+        });
+        String isopenstr = SavePasswd.getInstace().getIp(SavePasswd.ISOPENLOG,SavePasswd.CLOSE);
+        if (isopenstr.equals(SavePasswd.OPEN)){
+            open_log.setChecked(true);
+        }else{
+            open_log.setChecked(false);
+        }
     }
 
     @Event(R.id.set_host_btn)
