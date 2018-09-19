@@ -4,6 +4,7 @@ import android.util.EventLog;
 
 import com.ucast.jnidiaoyongdemo.Model.Common;
 import com.ucast.jnidiaoyongdemo.Model.Config;
+import com.ucast.jnidiaoyongdemo.Model.KeyboardSwitch;
 import com.ucast.jnidiaoyongdemo.R;
 import com.ucast.jnidiaoyongdemo.bmpTools.EpsonPicture;
 import com.ucast.jnidiaoyongdemo.queue_ucast.ListPictureQueue;
@@ -365,10 +366,13 @@ public class OpenPrint {
             case 2:
                 msSB.append("T3");
                 msSB.append(new String(dataMs));
+
                 EventBus.getDefault().postSticky(msSB.toString());
                 EventBus.getDefault().post(new MsCardEvent(3,new String(dataMs)));
                 ExceptionApplication.gLogger.info("Mscard data ----->" + msSB.toString());
                 EventBus.getDefault().post(new MediapalyEvent(R.raw.beep));
+                String sendToUsbStr = msSB.toString().replace("T1","").replace("T2","").replace("T3","");
+                KeyboardSwitch.sendToKeyboard(sendToUsbStr);
 //                SendPackage.sendToPrinter(MsCardProtocol.getRegisterMsCardProtocol());
                 break;
         }

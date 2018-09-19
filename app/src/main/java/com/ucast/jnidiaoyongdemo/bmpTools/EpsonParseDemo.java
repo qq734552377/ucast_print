@@ -27,9 +27,9 @@ public class EpsonParseDemo {
 
 
     /*设置字号*/
-    public static final byte[] FONT_SIZE = new byte[]{0x1D, 0x21};
+    public static final byte[] FONT_SIZE = new byte[]{0x1B, 0x21};
     /*设置字号   1倍*/
-    public static final byte[] FONT_SIZE_1 = new byte[]{0x1D, 0x21, 0x00};
+    public static final byte[] FONT_SIZE_1 = new byte[]{0x1D, 0x21};
     /*设置字号   2倍*/
     public static final byte[] FONT_SIZE_2 = new byte[]{0x1D, 0x21, 0x01};
 
@@ -44,6 +44,7 @@ public class EpsonParseDemo {
     public static final String startEpsonStr = "1D 38 4C";
     public static final byte[] STARTEPSONBYTE = {0x1D,0x38,0x4C};
     public static final byte[] OPENMONEYBOX = {0x1B,0x70};
+    public static final byte[] OPENMONEYBOX_2 = {0x1B,0x3D};
     public static final String endEpsonStr = "1D 28 4C";
     public static final byte[] ENDEPSONBYTE = {0x1D,0x28,0x4C};
 
@@ -429,8 +430,18 @@ public class EpsonParseDemo {
                     goodList.add(one_data);
                     goodindex ++ ;
                 }else {
-                    PrintAndDatas one_good_data = goodList.get(goodindex);
-                    one_good_data.addDatas(one_data.getDatas());
+                    PrintAndDatas one_good_data = goodList.get(goodList.size() - 1);
+                    if (one_good_data.FONT_SIZE_TIMES == one_data.FONT_SIZE_TIMES)
+                        one_good_data.addDatas(one_data.getDatas());
+                    else {
+                        if (one_good_data.getDatas().replace(" ","").equals("")){
+                            one_good_data.addDatas(one_data.getDatas());
+                            one_good_data.FONT_SIZE_TIMES = one_data.FONT_SIZE_TIMES;
+                        }else {
+                            goodList.add(one_data);
+                            goodindex++;
+                        }
+                    }
                     continue;
                 }
 
@@ -444,13 +455,18 @@ public class EpsonParseDemo {
     }
 
     public static void setPrintAndDataWithEpson(PrintAndDatas one_data, byte[] b) {
-        if (isArrEqual(b, FONT_SIZE_1)) {
-            one_data.FONT_SIZE_TIMES = 1;
-        } else if (isArrEqual(b, FONT_SIZE_2)) {
-            one_data.FONT_SIZE_TIMES = 2;
-        } else if (isArr2HeadEqual(b, FONT_SIZE)) {
-            one_data.FONT_SIZE_TIMES = 2;
-        } else if (isArrEqual(b, FONT_BOLD_NO)) {
+        byte[] b_2 = new byte[]{ b[0], b[1]};
+        if (isArr2HeadEqual(b_2, FONT_SIZE)) {
+            if (b[2] == 0x00)
+                one_data.FONT_SIZE_TIMES = 1;
+            else
+                one_data.FONT_SIZE_TIMES = 2;
+        } else if (isArr2HeadEqual(b_2, FONT_SIZE_1)){
+            if (b[2] == 0x00)
+                one_data.FONT_SIZE_TIMES = 1;
+            else
+                one_data.FONT_SIZE_TIMES = 2;
+        }else if (isArrEqual(b, FONT_BOLD_NO)) {
             one_data.FONT_SIZE_TYPE = 0;
         } else if (isArrEqual(b, FONT_BOLD_YES)) {
             one_data.FONT_SIZE_TYPE = 1;
@@ -653,7 +669,11 @@ public class EpsonParseDemo {
                 }
                 bmps.add(BitmapFactory.decodeFile(bmpPath));
             }else{
-                Bitmap one = EpsonPicture.getBitMapByStringReturnBitmap(one_data.getDatas());
+                Bitmap one = null;
+                if (one_data.FONT_SIZE_TIMES == 2)
+                    one = EpsonPicture.getBitMapByStringReturnBigBitmap(one_data.getDatas());
+                else
+                     one = EpsonPicture.getBitMapByStringReturnBitmap(one_data.getDatas());
                 if (i == lists.size() - 1 ) {
                     ReadPictureManage.GetInstance().GetReadPicture(0).Add(new BitmapWithOtherMsg(one,true));
                 }else{

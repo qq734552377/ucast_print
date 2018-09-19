@@ -127,10 +127,9 @@ public class UsbWithByteSerial {
         }
     }
 
-    private String cut_paper_1 = "1D 56";
     public static final byte[] cut_paper_byte_1 = {0x1D,0x56};
-    private String cut_paper_2 = "1B 69";
     public static final byte[] cut_paper_byte_2 = {0x1B,0x69};
+    public static final byte[] cut_paper_byte_3 = {0x1B,0x6D};
 
     private void AnalyticalProtocol(byte[] buffer) {
         try {
@@ -151,12 +150,12 @@ public class UsbWithByteSerial {
             while (cache.getOffSet() > 0) {
                 int startIndex = 0 ;
                 int endIndex = cache.getCutpapperPosition(cut_paper_byte_1);
-                if (endIndex <= -1){
+                if (endIndex <= -1)
                     endIndex = cache.getCutpapperPosition(cut_paper_byte_2);
-                    if (endIndex <= -1){
-                        break;
-                    }
-                }
+                if (endIndex <= -1)
+                    endIndex = cache.getCutpapperPosition(cut_paper_byte_3);
+                if (endIndex <= -1)
+                    break;
                 if (endIndex < startIndex)
                     break;
                 int len = endIndex + 2;

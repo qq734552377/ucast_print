@@ -8,6 +8,9 @@ import com.ucast.jnidiaoyongdemo.queue_ucast.ReadPicture;
 import com.ucast.jnidiaoyongdemo.tools.ExceptionApplication;
 import com.ucast.jnidiaoyongdemo.tools.MyTools;
 import com.ucast.jnidiaoyongdemo.tools.YinlianHttpRequestUrl;
+import com.ucast.jnidiaoyongdemo.xutilEvents.TishiMsgEvent;
+
+import org.greenrobot.eventbus.EventBus;
 
 import java.io.File;
 import java.util.List;
@@ -54,8 +57,16 @@ public class HandleEpsonDataByUcastPrint {
             List<Bitmap> bmps = EpsonParseDemo.parseEpsonBitDataAndStringReturnBitmap(goodPrintdatas);
 
             path = SomeBitMapHandleWay.compoundOneBitPicWithBimaps(bmps);
+            //取出文字
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < goodPrintdatas.size(); i++) {
+                PrintAndDatas one = goodPrintdatas.get(i);
+                if (!one.isBit){
+                    sb.append(one.getDatas());
+                }
+            }
             if (path != null && !path.equals("") && isUpload){
-                MyTools.uploadDataAndFileWithURLByQueue(goodPrintdatas.get(0).datas,path);
+                MyTools.uploadDataAndFileWithURLByQueue(sb.toString(),path);
             }
         } catch (Exception e) {
             e.printStackTrace();

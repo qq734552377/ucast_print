@@ -43,9 +43,11 @@ public class EpsonPicture {
 
     private final static int FONT_SIZE_TIMES = 1 ;
     private final static int LINE_HEIGHT = 40 ;
-    private final static String FONT = "simsun.ttc" ;
+    private final static int SMALL_LINE_HEIGHT = 30 ;
+    private final static String FONT = "SIMHEI.TTF" ;
     private final static int BITMAP_END_POINT = 384 ;
     private final static int CUT_PAPER_HEIGHT = 40 ;
+    private final static int SMALL_CUT_PAPER_HEIGHT = 30 ;
 
     public static String getBitMap(List<PrintAndDatas> printAndDatasList) {
 
@@ -75,9 +77,9 @@ public class EpsonPicture {
                 print.setTextSize(one.FONT_SIZE * one.FONT_SIZE_TIMES *3 / 4);
             }
 
-//        print.setTypeface(Typeface.MONOSPACE);
-            Typeface font = Typeface.createFromAsset(ExceptionApplication.getInstance().getAssets(),FONT);
-            print.setTypeface(Typeface.create(font,Typeface.NORMAL));
+            print.setTypeface(Typeface.MONOSPACE);
+//            Typeface font = Typeface.createFromAsset(ExceptionApplication.getInstance().getAssets(),FONT);
+//            print.setTypeface(Typeface.create(font,Typeface.NORMAL));
             for (int j = 0; j < list.size(); j++) {
                 canvas.drawText(list.get(j), one.OFFSET_X, cur_line * one.LINE_HEIGHT +one.OFFSET_Y * one.FONT_SIZE_TIMES, print);
                 cur_line ++;
@@ -108,9 +110,11 @@ public class EpsonPicture {
             width = SomeBitMapHandleWay.WIDTH_58;
         }
         LINE_STRING_NUMBER = width / ( FONT_SIZE / 2) ;
+        if (string.substring(0,1).equals("\n"))
+            string = string.substring(1,string.length());
         List<String> list = getLineStringDatas(string);
-        int Height = list.size() * LINE_HEIGHT;
-        Bitmap bmp = Bitmap.createBitmap(width, Height + CUT_PAPER_HEIGHT, Bitmap.Config.RGB_565);
+        int Height = list.size() * SMALL_LINE_HEIGHT;
+        Bitmap bmp = Bitmap.createBitmap(width, Height , Bitmap.Config.RGB_565);
         Canvas canvas = new Canvas(bmp);
         canvas.drawColor(Color.WHITE);
         Paint print = new Paint();
@@ -118,8 +122,10 @@ public class EpsonPicture {
         print.setTextSize(FONT_SIZE);
         Typeface font = Typeface.createFromAsset(ExceptionApplication.getInstance().getAssets(),FONT);
         print.setTypeface(Typeface.create(font,Typeface.NORMAL));
+//        print.setTypeface(Typeface.MONOSPACE);
+        int offsetY = (SMALL_LINE_HEIGHT - FONT_SIZE) / 2;
         for (int i = 0; i < list.size(); i++) {
-            canvas.drawText(list.get(i), OFFSET_X, i * LINE_HEIGHT + CUT_PAPER_HEIGHT , print);
+            canvas.drawText(list.get(i), OFFSET_X, i * SMALL_LINE_HEIGHT + SMALL_CUT_PAPER_HEIGHT - offsetY, print);
         }
         canvas.save(Canvas.ALL_SAVE_FLAG);
         canvas.restore();
@@ -138,8 +144,38 @@ public class EpsonPicture {
             LINE_BIG_STRING_NUMBER = 21 ;
         }
         List<String> list = getBigLineStringDatas(string);
+        //删除空格过多的地方  使文字居中
+        for (int i = 0; i < list.size(); i++) {
+            String one_data = list.get(i);
+            byte[] one_data_bytes = one_data.getBytes();
+            int head_blank_size = 0;
+            for (int j = 0; j < one_data_bytes.length; j++) {
+                if (one_data_bytes[j] == 0x20){
+                    head_blank_size++ ;
+                }else{
+                    break;
+                }
+            }
+            String available_str = one_data.replace(" ","");
+            int head_blanks = (LINE_BIG_STRING_NUMBER - available_str.getBytes().length) / 2;
+            if (head_blanks < head_blank_size) {
+                StringBuilder sb = new StringBuilder();
+                for (int j = 0; j < head_blanks; j++) {
+                    sb.append(" ");
+                }
+                sb.append(available_str);
+                list.set(i,sb.toString());
+            }else {
+                StringBuilder sb = new StringBuilder();
+                for (int j = 0; j < head_blank_size*2/3; j++) {
+                    sb.append(" ");
+                }
+                sb.append(available_str);
+                list.set(i,sb.toString());
+            }
+        }
         int Height = list.size() * LINE_HEIGHT;
-        Bitmap bmp = Bitmap.createBitmap(width, Height + CUT_PAPER_HEIGHT, Bitmap.Config.RGB_565);
+        Bitmap bmp = Bitmap.createBitmap(width, Height , Bitmap.Config.RGB_565);
         Canvas canvas = new Canvas(bmp);
         canvas.drawColor(Color.WHITE);
         Paint print = new Paint();
@@ -147,8 +183,10 @@ public class EpsonPicture {
         print.setTextSize(36);
         Typeface font = Typeface.createFromAsset(ExceptionApplication.getInstance().getAssets(),FONT);
         print.setTypeface(Typeface.create(font,Typeface.NORMAL));
+//        print.setTypeface(Typeface.MONOSPACE);
+        int offsetY = 2;
         for (int i = 0; i < list.size(); i++) {
-            canvas.drawText(list.get(i), 0, i * LINE_HEIGHT + CUT_PAPER_HEIGHT, print);
+            canvas.drawText(list.get(i), 0, i * LINE_HEIGHT + CUT_PAPER_HEIGHT - offsetY, print);
         }
         canvas.save(Canvas.ALL_SAVE_FLAG);
         canvas.restore();
