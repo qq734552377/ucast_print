@@ -114,7 +114,7 @@ public class EpsonPicture {
             string = string.substring(1,string.length());
         List<String> list = getLineStringDatas(string);
         int Height = list.size() * SMALL_LINE_HEIGHT;
-        Bitmap bmp = Bitmap.createBitmap(width, Height , Bitmap.Config.RGB_565);
+        Bitmap bmp = Bitmap.createBitmap(width, Height + 4 , Bitmap.Config.RGB_565);
         Canvas canvas = new Canvas(bmp);
         canvas.drawColor(Color.WHITE);
         Paint print = new Paint();
@@ -175,7 +175,7 @@ public class EpsonPicture {
             }
         }
         int Height = list.size() * LINE_HEIGHT;
-        Bitmap bmp = Bitmap.createBitmap(width, Height , Bitmap.Config.RGB_565);
+        Bitmap bmp = Bitmap.createBitmap(width, Height + 8 , Bitmap.Config.RGB_565);
         Canvas canvas = new Canvas(bmp);
         canvas.drawColor(Color.WHITE);
         Paint print = new Paint();
