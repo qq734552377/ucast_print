@@ -12,6 +12,7 @@ import android.widget.Toast;
 import com.alibaba.fastjson.JSON;
 import com.ucast.jnidiaoyongdemo.Model.Config;
 import com.ucast.jnidiaoyongdemo.R;
+import com.ucast.jnidiaoyongdemo.UpdateService;
 import com.ucast.jnidiaoyongdemo.jsonObject.BaseAdvResult;
 import com.ucast.jnidiaoyongdemo.jsonObject.BaseHttpResult;
 import com.ucast.jnidiaoyongdemo.jsonObject.ImgAdvResult;
@@ -19,6 +20,7 @@ import com.ucast.jnidiaoyongdemo.tools.MyTools;
 import com.ucast.jnidiaoyongdemo.tools.SavePasswd;
 import com.ucast.jnidiaoyongdemo.tools.YinlianHttpRequestUrl;
 import com.ucast.jnidiaoyongdemo.xutilEvents.AdvActEvent;
+import com.ucast.jnidiaoyongdemo.xutilEvents.SysUsbSettingEvent;
 import com.youth.banner.Banner;
 import com.youth.banner.BannerConfig;
 import com.youth.banner.Transformer;
@@ -196,6 +198,10 @@ public class AdvActivity extends AppCompatActivity implements ViewPager.OnPageCh
         //结束轮播
         banner.stopAutoPlay();
         handler.removeCallbacks(getAdv_callback);
+        if (UpdateService.isFirstStart){
+            EventBus.getDefault().post(new SysUsbSettingEvent(true,0));
+            UpdateService.isFirstStart = false;
+        }
     }
 
     @Override

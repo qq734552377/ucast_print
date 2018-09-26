@@ -18,6 +18,7 @@ import android.os.Environment;
 import android.os.IBinder;
 import android.os.SystemClock;
 import android.os.Vibrator;
+import android.provider.Settings;
 import android.support.annotation.MainThread;
 import android.support.annotation.Nullable;
 import android.support.annotation.RawRes;
@@ -29,6 +30,7 @@ import com.ucast.jnidiaoyongdemo.Serial.PrinterSerialRestart;
 import com.ucast.jnidiaoyongdemo.advAct.AdvActivity;
 import com.ucast.jnidiaoyongdemo.tools.ExceptionApplication;
 import com.ucast.jnidiaoyongdemo.tools.MyTools;
+import com.ucast.jnidiaoyongdemo.tools.SystemUtils;
 import com.ucast.jnidiaoyongdemo.xutilEvents.AdvActEvent;
 import com.ucast.jnidiaoyongdemo.xutilEvents.MediapalyEvent;
 import com.ucast.jnidiaoyongdemo.xutilEvents.MoneyBoxEvent;
@@ -52,6 +54,7 @@ import com.ucast.jnidiaoyongdemo.socket.net_print.NioNetPrintServer;
 import com.ucast.jnidiaoyongdemo.tools.MyDialog;
 import com.ucast.jnidiaoyongdemo.tools.SavePasswd;
 import com.ucast.jnidiaoyongdemo.tools.YinlianHttpRequestUrl;
+import com.ucast.jnidiaoyongdemo.xutilEvents.SysUsbSettingEvent;
 import com.ucast.jnidiaoyongdemo.xutilEvents.TishiMsgEvent;
 
 import org.greenrobot.eventbus.EventBus;
@@ -70,6 +73,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+import io.netty.util.internal.SystemPropertyUtil;
+
 
 /**
  * Created by pj on 2016/11/21.
@@ -79,13 +84,16 @@ public class UpdateService extends Service {
     public static boolean connected;
 
     private static final long MONEYBOXTISHITIME = 1000L * 8;
+    private static final long USBCHONGLIANTIME = 1000L * 60;
     private static long oldMoneyBoxTime ;
+    private static long oldUSBChONGLIANTime ;
     private static Dialog moneyBoxDialog;
     private Dialog msgDialog;
 
     private String last_request_time = "";
     private String last_alive_time = "";
-    private boolean isFirstStart = true;
+    public static boolean isFirstStart = true;
+    private int isFirstStartNum = 0;
 
     KeyBoardSerial keyBoardSerial = null;
     UsbWithByteSerial usbPort = null;
@@ -111,6 +119,7 @@ public class UpdateService extends Service {
         super.onCreate();
         startTimer();
         startMoneyBoxTimer();
+        startUsbTimer();
         copyCfg("ums.bmp");
         copyCfg("ucast.bmp");
         OpenPrint print = new OpenPrint(Config.PrinterSerial);
@@ -158,11 +167,16 @@ public class UpdateService extends Service {
         });
         EventBus.getDefault().register(this);
         YinlianHttpRequestUrl.writeToTempFile();
+//        EventBus.getDefault().post(new SysUsbSettingEvent(true));
 
         initMedia();
     }
 
     public void initUSbAndKeyboard(){
+        String state = SystemUtils.getSystemPropertyForJava(SystemUtils.SYSUSBKEY,"");
+        if (state.equals("none")){
+            return;
+        }
         if (keyBoardSerial == null && usbPort == null) {
             keyBoardSerial = new KeyBoardSerial(Config.KeyboardSerial);
             keyBoardSerial.Open();
@@ -170,6 +184,16 @@ public class UpdateService extends Service {
             usbPort = new UsbWithByteSerial(Config.UsbSerial);
             usbPort.Open();
             MermoyUsbWithByteSerial.Add(usbPort);
+        }
+    }
+    public void closeUSbAndKeyboard(){
+        if (keyBoardSerial != null && usbPort != null) {
+            keyBoardSerial.MyDispose();
+            usbPort.Dispose();
+            MermoyKeyboardSerial.Remove(Config.KeyboardSerialName);
+            MermoyUsbWithByteSerial.Remove(Config.UsbSerial);
+            keyBoardSerial = null;
+            usbPort = null;
         }
     }
 
@@ -233,8 +257,10 @@ public class UpdateService extends Service {
                         break;
                     case MyUsbManager.ACTION_USB_STATE:
                         connected = intent.getBooleanExtra(MyUsbManager.USB_CONNECTED, false);
-                        if (connected)
+//                        EventBus.getDefault().post(new TishiMsgEvent(connected ? "系统---》连接着...." : "系统---》没连上"));
+                        if (connected) {
                             initUSbAndKeyboard();
+                        }
                         if( !connected){
                             String usb_state = "0";
                             try {
@@ -242,16 +268,19 @@ public class UpdateService extends Service {
                             } catch (IOException e) {
                                 e.printStackTrace();
                             }
-                            if (usb_state.equals("1\n")){
+                            if (!usb_state.equals("0\n")){
                                 connected = true;
                                 initUSbAndKeyboard();
-//                                EventBus.getDefault().post(new TishiMsgEvent(connected ? "连接着" : "没连上"));
+//                                EventBus.getDefault().post(new TishiMsgEvent(connected ? "vbus_status---》连接着。。。" : "vbus_status---》没连上"));
                                 return;
                             }
+//                            EventBus.getDefault().post(new TishiMsgEvent(connected ? "vbus_status---》连接着。。。" : "vbus_status---》没连上"));
+                            closeUSbAndKeyboard();
+                            isFirstStartNum = 0;
                             String url= YinlianHttpRequestUrl.TIMEUPDATEURL;
                             getSystemTime(url.trim());
                         }
-//                        EventBus.getDefault().post(new TishiMsgEvent(connected ? "连接着" : "没连上"));
+
                         break;
                 }
             }
@@ -267,6 +296,7 @@ public class UpdateService extends Service {
 
     public MyTimer timer;
     public MyTimer moneyBoxtimer;
+    public MyTimer usbtimer;
     public void startTimer() {
         timer = new MyTimer(new MyTimeTask(new Runnable() {
             @Override
@@ -289,6 +319,47 @@ public class UpdateService extends Service {
             }
         }), 1000*2L, 1*1000*2L);
         moneyBoxtimer.initMyTimer().startMyTimer();
+    }
+    public void startUsbTimer(){
+        usbtimer = new MyTimer(new MyTimeTask(new Runnable() {
+            @Override
+            public void run() {
+
+                String usb_state = "0";
+                try {
+                    usb_state = MyTools.loadFileAsString("/sys/devices/ff580000.usb/driver/vbus_status");
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                if (!usb_state.equals("0\n")){
+//                    EventBus.getDefault().post(new TishiMsgEvent("轮询---》连接着。。。" + isFirstStartNum));
+                    if (isFirstStartNum < 4){
+                        isFirstStartNum++;
+                        return;
+                    }
+                    if (isFirstStart){
+//                        EventBus.getDefault().post(new TishiMsgEvent("isFirstStart轮询---》初始化一次"));
+                        EventBus.getDefault().post(new SysUsbSettingEvent(true));
+                        isFirstStart = false;
+                        isFirstStartNum = 0;
+                        return;
+                    }
+                    if (usbPort == null){
+//                        EventBus.getDefault().post(new TishiMsgEvent("轮询---》初始化一次"));
+                        EventBus.getDefault().post(new SysUsbSettingEvent(true));
+                        isFirstStartNum = 0;
+                        return;
+                    }
+                }else{
+                    if (connected)
+                        return;
+//                    EventBus.getDefault().post(new TishiMsgEvent("轮询---》没连上"));
+//                    EventBus.getDefault().post(new SysUsbSettingEvent(true));
+                    isFirstStartNum = 0;
+                }
+            }
+        }), 30*1000L, 10*1000L);
+        usbtimer.initMyTimer().startMyTimer();
     }
 
     private static final String TAG = "UpdateService";
@@ -481,6 +552,38 @@ public class UpdateService extends Service {
         mediaPlayer.reset();
         setResource(event.getSource());
         mediaPlayer.start();
+    }
+    @Subscribe(threadMode = ThreadMode.ASYNC)
+    public void setSysUsb(SysUsbSettingEvent event){
+        //当时间为0时 表示主动触发初始化usb
+        if (event.getFirstTime() == 0){
+            try {
+                closeUSbAndKeyboard();
+                Thread.sleep(200);
+                String state = SystemUtils.getSystemPropertyForJava(SystemUtils.SYSUSBKEY,"");
+                if (!state.equals("none")){
+                    SystemUtils.setSysUsbToNone();
+                }
+                Thread.sleep(2500);
+                SystemUtils.setSysUsbToUSb();
+                Thread.sleep(50);
+            }catch (Exception e){
+
+            }
+            return;
+        }
+        if (event.isSetNone()){
+            try {
+                closeUSbAndKeyboard();
+                Thread.sleep(1000);
+                SystemUtils.setSysUsbToNone();
+                Thread.sleep(event.getFirstTime());
+                SystemUtils.setSysUsbToUSb();
+                Thread.sleep(50);
+            }catch (Exception e){
+
+            }
+        }
     }
 
 }

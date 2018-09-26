@@ -34,6 +34,18 @@ public class KeyBoardSerial {
         }
     }
 
+    public void MyDispose() {
+        try {
+            if (output != null) {
+                output.close();
+            }
+            if (ser != null)
+                ser.closeSerialPort();
+        } catch (IOException e) {
 
+        } finally {
+
+        }
+    }
 
 }
