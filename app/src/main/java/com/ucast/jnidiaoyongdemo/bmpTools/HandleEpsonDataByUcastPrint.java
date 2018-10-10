@@ -57,7 +57,7 @@ public class HandleEpsonDataByUcastPrint {
             List<Bitmap> bmps = EpsonParseDemo.parseEpsonBitDataAndStringReturnBitmap(goodPrintdatas);
 
             path = SomeBitMapHandleWay.compoundOneBitPicWithBimaps(bmps);
-            //取出文字
+            //取出文字传给后台
             StringBuilder sb = new StringBuilder();
             for (int i = 0; i < goodPrintdatas.size(); i++) {
                 PrintAndDatas one = goodPrintdatas.get(i);

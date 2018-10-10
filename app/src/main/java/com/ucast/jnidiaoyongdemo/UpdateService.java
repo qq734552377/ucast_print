@@ -351,14 +351,12 @@ public class UpdateService extends Service {
                         return;
                     }
                 }else{
-                    if (connected)
-                        return;
 //                    EventBus.getDefault().post(new TishiMsgEvent("轮询---》没连上"));
 //                    EventBus.getDefault().post(new SysUsbSettingEvent(true));
                     isFirstStartNum = 0;
                 }
             }
-        }), 30*1000L, 10*1000L);
+        }), 1*1000L, 10*1000L);
         usbtimer.initMyTimer().startMyTimer();
     }
 

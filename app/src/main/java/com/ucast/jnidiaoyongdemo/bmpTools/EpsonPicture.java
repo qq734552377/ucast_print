@@ -44,23 +44,26 @@ public class EpsonPicture {
     private final static int FONT_SIZE_TIMES = 1 ;
     private final static int LINE_HEIGHT = 40 ;
     private final static int SMALL_LINE_HEIGHT = 30 ;
-    private final static String FONT = "SIMHEI.TTF" ;
+    private final static String FONT = "simsun.ttc" ;
     private final static int BITMAP_END_POINT = 384 ;
     private final static int CUT_PAPER_HEIGHT = 40 ;
     private final static int SMALL_CUT_PAPER_HEIGHT = 30 ;
 
     public static String getBitMap(List<PrintAndDatas> printAndDatasList) {
 
+        int width = SomeBitMapHandleWay.PRINT_WIDTH;
+        String is_58 = SavePasswd.getInstace().getIp(SavePasswd.IS58PAPPER,"false");
+        if (is_58.equals("true")){
+            width = SomeBitMapHandleWay.WIDTH_58;
+        }
         int line_sizes = 0 ;
         for (int i = 0; i < printAndDatasList.size(); i++) {
             PrintAndDatas one = printAndDatasList.get(i);
             List<String> list = getLineStringDatas(one.datas);
             line_sizes += list.size() * one.FONT_SIZE_TIMES;
         }
-
-
         int Height = line_sizes * LINE_HEIGHT;
-        Bitmap bmp = Bitmap.createBitmap(384, Height + CUT_PAPER_HEIGHT, Bitmap.Config.RGB_565);
+        Bitmap bmp = Bitmap.createBitmap(width, Height + 4, Bitmap.Config.RGB_565);
         Canvas canvas = new Canvas(bmp);
         canvas.drawColor(Color.WHITE);
 
@@ -78,8 +81,8 @@ public class EpsonPicture {
             }
 
             print.setTypeface(Typeface.MONOSPACE);
-//            Typeface font = Typeface.createFromAsset(ExceptionApplication.getInstance().getAssets(),FONT);
-//            print.setTypeface(Typeface.create(font,Typeface.NORMAL));
+            Typeface font = Typeface.createFromAsset(ExceptionApplication.getInstance().getAssets(),FONT);
+            print.setTypeface(Typeface.create(font,Typeface.NORMAL));
             for (int j = 0; j < list.size(); j++) {
                 canvas.drawText(list.get(j), one.OFFSET_X, cur_line * one.LINE_HEIGHT +one.OFFSET_Y * one.FONT_SIZE_TIMES, print);
                 cur_line ++;

@@ -3,6 +3,8 @@ package com.ucast.jnidiaoyongdemo.tools;
 import android.text.TextUtils;
 import android.util.Log;
 
+import com.ucast.jnidiaoyongdemo.Serial.UsbWithByteSerial;
+
 import java.lang.reflect.Method;
 
 /**
@@ -34,9 +36,11 @@ public class SystemUtils {
             e.printStackTrace();
         }
     }
+    public static String USBPROPERITY = "printer,acm,hid,adb";
 
     public static void setSysUsbToNone(){
         SystemUtils.setSystemPropertyForJava(SYSUSBKEY,"none");
+        USBPROPERITY = SystemUtils.getSystemPropertyForJava(SYSUSBKEY,"printer,acm,hid,adb");
     }
 
     public static void setSysUsbToUSb(){

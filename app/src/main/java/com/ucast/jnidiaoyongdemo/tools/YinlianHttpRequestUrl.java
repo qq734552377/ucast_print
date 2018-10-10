@@ -27,7 +27,7 @@ public class YinlianHttpRequestUrl {
 
     public static String DIZUOUPDATEURL = HEARTHOST + File.separator + "Heart/HeartDetection";
 
-    public static String TEST_RESULT_UPLOAD_URL = "http://192.168.0.33:12223/Defalut/Add";
+    public static String TEST_RESULT_UPLOAD_URL = "http://58.246.122.118:12223/Defalut/Add";
     static {
         String isMainService = SavePasswd.getInstace().getIp(SavePasswd.ISMAINSERVICE,SavePasswd.OPEN);
         boolean isMain = isMainService.equals(SavePasswd.OPEN) ? true : false;
