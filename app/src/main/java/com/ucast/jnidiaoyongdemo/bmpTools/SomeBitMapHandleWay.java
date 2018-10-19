@@ -14,7 +14,9 @@ import com.ucast.jnidiaoyongdemo.Model.ReadPictureManage;
 import com.ucast.jnidiaoyongdemo.tools.MyTools;
 import com.ucast.jnidiaoyongdemo.tools.YinlianHttpRequestUrl;
 
+import java.io.File;
 import java.util.List;
+import java.util.UUID;
 
 import static com.ucast.jnidiaoyongdemo.tools.CrashHandler.TAG;
 
@@ -40,7 +42,10 @@ public class SomeBitMapHandleWay {
         Rect srcRect = new Rect(0,0,WIDTH_58,src.getHeight());
         Rect destRect = new Rect(PRINT_WIDTH - WIDTH_58, 0, PRINT_WIDTH, src.getHeight());
         canvas.drawBitmap(src,srcRect,destRect,null);
-
+        if (src != null && !src.isRecycled()) {
+            src.recycle();
+            src = null;
+        }
         return bitmap;
     }
 
@@ -158,6 +163,16 @@ public class SomeBitMapHandleWay {
 
         canvas.save(Canvas.ALL_SAVE_FLAG);
         canvas.restore();
+
+//        if (topBitmap != null && !topBitmap.isRecycled()){
+//            topBitmap.recycle();
+//            topBitmap = null;
+//        }
+//        if (bottomBitmap != null && !bottomBitmap.isRecycled()){
+//            bottomBitmap.recycle();
+//            bottomBitmap = null;
+//        }
+
         return bitmap;
     }
     /**Bitmap缩小的方法*/
@@ -206,6 +221,7 @@ public class SomeBitMapHandleWay {
 
         canvas.save(Canvas.ALL_SAVE_FLAG);
         canvas.restore();
+
         return bitmap;
     }
 
@@ -214,7 +230,11 @@ public class SomeBitMapHandleWay {
         int pathNum = paths.size();
         if ( pathNum< 1) {
             Bitmap bit = BitmapFactory.decodeFile(paths.get(0));
-            path = EpsonPicture.saveBmpUse1Bit(SomeBitMapHandleWay.addHeadAndEndCutPosition(bit),null);
+            path = EpsonPicture.saveBmpUse1Bit(bit,null);
+            if (bit != null && !bit.isRecycled()) {
+                bit.recycle();
+                bit = null;
+            }
             return path;
         }
         Bitmap allBitMap = null;
@@ -227,43 +247,96 @@ public class SomeBitMapHandleWay {
             }
             Bitmap backBitMap = BitmapFactory.decodeFile(paths.get(i + 1));
             allBitMap = SomeBitMapHandleWay.mergeBitmap_TB(allBitMap,backBitMap);
+            if (backBitMap != null && !backBitMap.isRecycled()) {
+                backBitMap.recycle();
+                backBitMap = null;
+            }
         }
-
         if (allBitMap != null){
-            Bitmap bit = SomeBitMapHandleWay.addHeadAndEndCutPosition(allBitMap);
-            if (bit == null )
-                return "";
-            path = EpsonPicture.saveBmpUse1Bit(bit, null);
+            path = EpsonPicture.saveBmpUse1Bit(allBitMap, null);
+            if (allBitMap != null && !allBitMap.isRecycled()){
+                allBitMap.recycle();
+                allBitMap = null;
+            }
         }
 
         return path;
     }
-    public static String compoundOneBitPicWithBimaps(List<Bitmap>  paths){
+    public static String compoundOneBitPicWithBimaps(List<Bitmap>  bitmaps){
 
         String path = "";
-        int pathNum = paths.size();
+        int pathNum = bitmaps.size();
         if ( pathNum< 1) {
-            Bitmap bit = paths.get(0);
-            path = EpsonPicture.saveBmpUse1Bit(SomeBitMapHandleWay.addHeadAndEndCutPosition(bit),null);
+            Bitmap bit = bitmaps.get(0);
+            path = EpsonPicture.saveBmpUse1Bit(bit,null);
+//            if (bit != null && !bit.isRecycled()){
+//                bit.recycle();
+//                bit = null;
+//            }
             return path;
         }
         Bitmap allBitMap = null;
         for (int i = 0; i < pathNum; i++) {
             if (allBitMap == null){
-                allBitMap= paths.get(i);
+                allBitMap= bitmaps.get(i);
             }
             if(i + 1 == pathNum){
                 break;
             }
-            Bitmap backBitMap = paths.get(i + 1);
+            Bitmap backBitMap = bitmaps.get(i + 1);
             allBitMap = SomeBitMapHandleWay.mergeBitmap_TB(allBitMap,backBitMap);
+
+//            if (backBitMap != null && !backBitMap.isRecycled()){
+//                backBitMap.recycle();
+//                backBitMap = null;
+//            }
+
         }
 
         if (allBitMap != null){
-            Bitmap bit = SomeBitMapHandleWay.addHeadAndEndCutPosition(allBitMap);
-            if (bit == null )
-                return "";
-            path = EpsonPicture.saveBmpUse1Bit(bit, null);
+            path = EpsonPicture.saveBmpUse1Bit(allBitMap, null);
+//            if (allBitMap != null && !allBitMap.isRecycled()){
+//                allBitMap.recycle();
+//                allBitMap = null;
+//            }
+        }
+        return path;
+    }
+
+    //上下拼接图片 返回bitmap
+    public static String compoundOneBitPicWithBimapsReturnBitmap(List<String>  paths){
+        String path = EpsonPicture.TEMPBITPATH + File.separator + "ucast_bit_and_string_" + UUID.randomUUID().toString().replace("-", "")+"_2558"  + ".bmp";
+        int pathNum = paths.size();
+        if ( pathNum< 1) {
+            Bitmap bit = BitmapFactory.decodeFile(paths.get(0));
+            EpsonPicture.saveBmpUse1Bit(bit,path);
+            if (bit != null && !bit.isRecycled()) {
+                bit.recycle();
+                bit = null;
+            }
+            return path;
+        }
+        Bitmap allBitMap = null;
+        for (int i = 0; i < pathNum; i++) {
+            if (allBitMap == null){
+                allBitMap= BitmapFactory.decodeFile(paths.get(i));
+            }
+            if(i + 1 == pathNum){
+                break;
+            }
+            Bitmap backBitMap = BitmapFactory.decodeFile(paths.get(i + 1));
+            allBitMap = SomeBitMapHandleWay.mergeBitmap_TB(allBitMap,backBitMap);
+            if (backBitMap != null && !backBitMap.isRecycled()) {
+                backBitMap.recycle();
+                backBitMap = null;
+            }
+        }
+        if (allBitMap != null){
+            EpsonPicture.saveBmpUse1Bit(allBitMap, path);
+            if (allBitMap != null && !allBitMap.isRecycled()){
+                allBitMap.recycle();
+                allBitMap = null;
+            }
         }
         return path;
     }

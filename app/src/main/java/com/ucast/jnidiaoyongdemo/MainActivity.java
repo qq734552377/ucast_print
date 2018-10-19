@@ -33,8 +33,10 @@ import com.ucast.jnidiaoyongdemo.queue_ucast.ReadPicture;
 import com.ucast.jnidiaoyongdemo.testActs.TestMainActivity;
 import com.ucast.jnidiaoyongdemo.tools.MyTools;
 import com.ucast.jnidiaoyongdemo.tools.SavePasswd;
+import com.ucast.jnidiaoyongdemo.tools.SystemUtils;
 import com.ucast.jnidiaoyongdemo.tools.YinlianHttpRequestUrl;
 import com.ucast.jnidiaoyongdemo.advAct.AdvActivity;
+import com.ucast.jnidiaoyongdemo.xutilEvents.SysUsbSettingEvent;
 import com.ucast.jnidiaoyongdemo.xutilEvents.TishiMsgEvent;
 
 import org.greenrobot.eventbus.EventBus;
@@ -270,6 +272,11 @@ public class MainActivity extends AppCompatActivity {
                 break;
             case R.id.adv:
                 startActivity(new Intent(this, AdvActivity.class));
+                break;
+            case R.id.adb_start:
+                SystemUtils.ISGETUSBPROPERITY = false;
+                SystemUtils.USBPROPERITY = "printer,acm,hid,adb";
+                EventBus.getDefault().post(new SysUsbSettingEvent(true,0));
                 break;
         }
         return super.onOptionsItemSelected(item);

@@ -2,11 +2,14 @@ package com.ucast.jnidiaoyongdemo.bmpTools;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Rect;
 
 import com.ucast.jnidiaoyongdemo.Model.BitmapWithOtherMsg;
 import com.ucast.jnidiaoyongdemo.Model.ReadPictureManage;
 import com.ucast.jnidiaoyongdemo.tools.ExceptionApplication;
-import com.ucast.jnidiaoyongdemo.tools.MyTools;
+import com.ucast.jnidiaoyongdemo.tools.SavePasswd;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -127,7 +130,17 @@ public class EpsonParseDemo {
         int index = -1;
         for (int i = 0; i < datas.length;) {
             if(datas[i] == 0x1B || datas[i] ==0x1C || datas[i] == 0x1D ) {
-                if(datas[i] == 0x1D && i + 1 < datas.length && datas[i + 1] == 0x76) {
+                if(datas[i] == 0x1B && i + 1 < datas.length && datas[i + 1] == 0x2A){
+                    index++;
+                    int number = (datas[i + 3] & 0xFF) + (datas[i + 4] << 8 & 0xff00);
+                    int bitArrLen = number + 5;
+
+                    byte[] headBy = new byte[bitArrLen];
+                    System.arraycopy(datas, i, headBy, 0, bitArrLen);
+                    epsonList.add(headBy);
+
+                    i = i + bitArrLen;
+                }else if(datas[i] == 0x1D && i + 1 < datas.length && datas[i + 1] == 0x76) {
                     index++;
                     int width = (datas[i + 4] & 0xFF) + (datas[i + 5] << 8 & 0xff00);
                     int height = (datas[i + 6] & 0xFF) + (datas[i + 7] << 8 & 0xff00);
@@ -288,12 +301,16 @@ public class EpsonParseDemo {
                     isPasered = true;
                 }
                 if(     b_1B_1 == 0x26 ||
-                        b_1B_1 == 0x2A ||
                         b_1B_1 == 0x32 ||
                         b_1B_1 == 0x3C ||
                         b_1B_1 == 0x70   ){
                     position = 2;
                     setDataToList(position,b,one_data,printLists);
+                    isPasered = true;
+                }
+                if (b_1B_1 == 0x2A){
+                    position = 5;
+                    set1B_2A_DataToList(position,b,one_data,printLists);
                     isPasered = true;
                 }
 
@@ -387,6 +404,56 @@ public class EpsonParseDemo {
             printLists.add(one_data);
         }
     }
+    public static void set1B_2A_DataToList(int cutPosition,byte[] b,PrintAndDatas one_data,List<PrintAndDatas> printLists){
+        int position = cutPosition;
+        int endLen = 2;
+
+
+        byte[] lastEpson = new byte[position];
+        System.arraycopy(b, 0, lastEpson, 0, position);
+        int mode = lastEpson[2] & 0xFF; //模式
+        int dataLen = (lastEpson[3] & 0xFF) + (lastEpson[4] & 0xFF) * 256; //数据长度
+        if (mode == 32 || mode == 33) {
+            dataLen *= 3;
+        }
+
+
+        byte[] datas = new byte[dataLen];
+        System.arraycopy(b, position, datas, 0, datas.length);
+        if (mode == 0 || mode == 1){
+            setPrintAndDataWithEpson(one_data, lastEpson);
+            byte[] bitData = getBitDataBy1B2A(datas);
+            one_data.isBit = true;
+            one_data.setBitDatasByte(bitData);
+            one_data.bitHeight = 8;
+            one_data.bitWidth = bitData.length / one_data.bitHeight;
+            printLists.add(one_data);
+        }else if(mode == 32 || mode == 33){
+            int one_line_len = datas.length / 3;
+            byte[] b_24_1 = new byte[one_line_len];
+            byte[] b_24_2 = new byte[one_line_len];
+            byte[] b_24_3 = new byte[one_line_len];
+
+            for (int i = 3; i < datas.length + 1 ; i += 3) {
+                b_24_1[i/3 - 1] = datas[i - 3];
+                b_24_2[i/3 - 1] = datas[i - 2];
+                b_24_3[i/3 - 1] = datas[i - 1];
+            }
+            byte[] bitData_1 = getBitDataBy1B2A(b_24_1);
+            byte[] bitData_2 = getBitDataBy1B2A(b_24_2);
+            byte[] bitData_3 = getBitDataBy1B2A(b_24_3);
+            byte[] bitData = new byte[bitData_1.length + bitData_2.length + bitData_3.length];
+            System.arraycopy(bitData_1,0,bitData,0,bitData_1.length);
+            System.arraycopy(bitData_2,0,bitData,bitData_1.length,bitData_2.length);
+            System.arraycopy(bitData_3,0,bitData,bitData_1.length + bitData_2.length,bitData_3.length);
+            one_data.isBit = true;
+            one_data.setBitDatasByte(bitData);
+            one_data.bitHeight = 24;
+            one_data.bitWidth = bitData.length / one_data.bitHeight;
+            printLists.add(one_data);
+        }
+
+    }
 
 
     /**
@@ -414,6 +481,25 @@ public class EpsonParseDemo {
         return isRight;
     }
 
+    // 将1B 2A 的数据解析为位图数据
+    public static byte[] getBitDataBy1B2A(byte[] src){
+        int len = (src.length + 7) / 8 * 8;
+        byte[] dest = new byte[len];
+        int w = len / 8 ;
+        int h = 8;
+        for (int i = 0; i < src.length; i++) {
+            byte oneSrc = src[i];
+            for (int j = 7; j >= 0; j--) {
+                int src_one_bit_num = (oneSrc >> j & 0x01);//元数据的位值  从高位开始
+                int indexDest = (7 - j) * w + i / 8;//对应目标数组中byte的索引
+                int dest_bit_index = 7 - i % 8;//目标byte的第几位 从低位开始
+                dest[indexDest] |= src_one_bit_num << dest_bit_index;
+            }
+        }
+
+        return dest;
+    }
+
     /**
      *    将多个PrintAndDatas对象中的文字数据拼接为一个
      *
@@ -429,6 +515,9 @@ public class EpsonParseDemo {
                 if(goodindex == -1 || goodindex >= goodList.size()) {
                     goodList.add(one_data);
                     goodindex ++ ;
+                    if (goodList.size() > 0 && goodList.get(goodList.size() - 1).isBit){
+                        goodindex --;
+                    }
                 }else {
                     PrintAndDatas one_good_data = goodList.get(goodList.size() - 1);
                     if (one_good_data.FONT_SIZE_TIMES == one_data.FONT_SIZE_TIMES)
@@ -437,6 +526,8 @@ public class EpsonParseDemo {
                         if (one_good_data.getDatas().replace(" ","").equals("")){
                             one_good_data.addDatas(one_data.getDatas());
                             one_good_data.FONT_SIZE_TIMES = one_data.FONT_SIZE_TIMES;
+                            one_good_data.bitWidthRate = one_data.bitWidthRate;
+                            one_good_data.bitHeightRate = one_data.bitHeightRate;
                         }else {
                             goodList.add(one_data);
                             goodindex++;
@@ -459,13 +550,23 @@ public class EpsonParseDemo {
         if (isArr2HeadEqual(b_2, FONT_SIZE)) {
             if (b[2] == 0x00)
                 one_data.FONT_SIZE_TIMES = 1;
-            else
+            else{
                 one_data.FONT_SIZE_TIMES = 2;
+                int heightRate = b[2] >> 4 & 0x01;
+                int widthRate = b[2] >> 5 & 0x01;
+                one_data.bitHeightRate = heightRate + 1;
+                one_data.bitWidthRate = widthRate + 1;
+            }
         } else if (isArr2HeadEqual(b_2, FONT_SIZE_1)){
             if (b[2] == 0x00)
                 one_data.FONT_SIZE_TIMES = 1;
-            else
+            else {
                 one_data.FONT_SIZE_TIMES = 2;
+                int heightRate = b[2] & 0x01;
+                int widthRate = b[2] >> 4 & 0x01;
+                one_data.bitHeightRate = heightRate + 1;
+                one_data.bitWidthRate = widthRate + 1;
+            }
         }else if (isArrEqual(b, FONT_BOLD_NO)) {
             one_data.FONT_SIZE_TYPE = 0;
         } else if (isArrEqual(b, FONT_BOLD_YES)) {
@@ -643,12 +744,19 @@ public class EpsonParseDemo {
         return bmpPaths;
     }
     /**
-     *    解析 文字和位图混合的数据  生成对应的位图图片  返回bitmap集合
+     *    解析 文字和位图混合的数据  生成对应的位图图片  返回bitmapd的路径集合
      * */
-    public static List<Bitmap> parseEpsonBitDataAndStringReturnBitmap (List<PrintAndDatas> lists){
-        List<Bitmap> bmps = new ArrayList<>();
-
-        for (int i = 0; i < lists.size(); i++) {
+    public static List<String> parseEpsonBitDataAndStringReturnBitmapPaths(List<PrintAndDatas> lists){
+//        List<Bitmap> bmps = new ArrayList<>();
+        List<String> textPaths = new ArrayList<>();
+        List<String> paths = new ArrayList<>();
+        int print_width = SomeBitMapHandleWay.PRINT_WIDTH;
+        String is_58 = SavePasswd.getInstace().getIp(SavePasswd.IS58PAPPER,"false");
+        if (is_58.equals("true")){
+            print_width = SomeBitMapHandleWay.WIDTH_58;
+        }
+        int allCount = lists.size();
+        for (int i = 0; i < allCount;) {
             PrintAndDatas one_data = lists.get(i);
             if (one_data.isBit){
                 String bmpPath = EpsonPicture.TEMPBITPATH + File.separator + "ucast_bit_and_string_" + UUID.randomUUID().toString().replace("-", "")+"_" +i + ".bmp";
@@ -662,28 +770,316 @@ public class EpsonParseDemo {
                     bmpData =EpsonPicture.getTwiceHeighData(bmpData , widthWithRate);
                 }
                 saveAsBitmapWithByteDataUse1Bit(bmpData, widthWithRate * 8 , bmpPath);
-                if (i == lists.size() - 1 ) {
-                    ReadPictureManage.GetInstance().GetReadPicture(0).Add(new BitmapWithOtherMsg(bmpPath,true));
-                }else{
-                    ReadPictureManage.GetInstance().GetReadPicture(0).Add(new BitmapWithOtherMsg(bmpPath,false));
-                }
-                bmps.add(BitmapFactory.decodeFile(bmpPath));
+//                if (i == lists.size() - 1 ) {
+//                    ReadPictureManage.GetInstance().GetReadPicture(0).Add(new BitmapWithOtherMsg(bmpPath,true));
+//                }else{
+//                    ReadPictureManage.GetInstance().GetReadPicture(0).Add(new BitmapWithOtherMsg(bmpPath,false));
+//                }
+                paths.add(bmpPath);
+//                bmps.add(BitmapFactory.decodeFile(bmpPath));
+                i++;
             }else{
-                Bitmap one = null;
-                if (one_data.FONT_SIZE_TIMES == 2)
-                    one = EpsonPicture.getBitMapByStringReturnBigBitmap(one_data.getDatas());
-                else
-                     one = EpsonPicture.getBitMapByStringReturnBitmap(one_data.getDatas());
-                if (i == lists.size() - 1 ) {
-                    ReadPictureManage.GetInstance().GetReadPicture(0).Add(new BitmapWithOtherMsg(one,true));
-                }else{
-                    ReadPictureManage.GetInstance().GetReadPicture(0).Add(new BitmapWithOtherMsg(one,false));
+                String one = "";
+                int addTimes = 1;
+                if (one_data.FONT_SIZE_TIMES == 2){
+//                    one = EpsonPicture.getBitMapByStringReturnBigBitmap(one_data.getDatas());
+                    one = EpsonPicture.getBitMapByPrintAndDatasReturnBitmap(one_data);
+                    if (i + addTimes < allCount ){//没有越界
+                        PrintAndDatas second_data = lists.get(i + addTimes);
+                        if (!second_data.isBit ) {//不是位图数据
+                            String lastString = one_data.getDatas();
+                            String secondString = second_data.getDatas();
+                            if (one_data.FONT_SIZE_TIMES == second_data.FONT_SIZE_TIMES && one_data.bitWidthRate == second_data.bitWidthRate && one_data.bitHeightRate == second_data.bitHeightRate) {
+                                if (!lastString.substring(lastString.length() - 1, lastString.length()).equals("\n") && !secondString.substring(0, 1).equals("\n")) {
+                                    //上一个字符串最后一位不是\n 可能还需判断长度是否超过
+                                    one_data.addDatas(second_data.datas);
+                                    String newData = one_data.datas;
+                                    int byteNum = 0;
+                                    try {
+                                        byteNum = newData.getBytes("GB18030").length;
+                                    } catch (UnsupportedEncodingException e) {
+                                        e.printStackTrace();
+                                    }
+                                    int width = byteNum * one_data.bitWidthRate * EpsonPicture.FONT_SIZE / 2;
+                                    if (width > print_width) {
+                                        int space_num = countCharNum(newData, " ");
+                                        int other_num = byteNum - space_num;
+                                        int print_space_num = (print_width - other_num * one_data.bitWidthRate * EpsonPicture.FONT_SIZE / 2) / (one_data.bitWidthRate * EpsonPicture.FONT_SIZE / 2);
+                                        StringBuilder sb = new StringBuilder();
+                                        sb.append(newData.substring(0, newData.indexOf(" ")));
+                                        for (int j = 0; j < print_space_num; j++) {
+                                            sb.append(" ");
+                                        }
+                                        sb.append(newData.substring(newData.lastIndexOf(" ") + 1, newData.length()));
+                                        one_data.datas = sb.toString();
+                                    }
+                                    one = EpsonPicture.getBitMapByPrintAndDatasReturnBitmap(one_data);
+                                    addTimes++;
+                                }
+                            }
+                            if(one_data.FONT_SIZE_TIMES != second_data.FONT_SIZE_TIMES){
+                                if (!lastString.substring(lastString.length()-1,lastString.length()).equals("\n") && !secondString.substring(0,1).equals("\n")) {
+                                    //上一个字符串最后一位不是\n 可能还需判断长度是否超过
+                                    String[] lastStringArr = lastString.split("\n");
+                                    int x_offset = 0;
+                                    try {
+                                        x_offset = lastStringArr[lastStringArr.length -1].getBytes("GB18030").length * EpsonPicture.FONT_SIZE * one_data.bitWidthRate / 2;
+                                    } catch (UnsupportedEncodingException e) {
+                                        e.printStackTrace();
+                                    }
+                                    int enterIndex = secondString.indexOf("\n");
+                                    String pingjieStr = "";
+                                    if(enterIndex != -1)
+                                        pingjieStr = secondString.substring(0,enterIndex);
+                                    else
+                                        pingjieStr = secondString;
+                                    String endStr = secondString.substring(enterIndex + 1,secondString.length());
+                                    int second_string_len = 0;
+                                    try {
+                                        second_string_len = pingjieStr.replace("\n","").getBytes("GB18030").length * EpsonPicture.FONT_SIZE * second_data.bitWidthRate / 2;
+                                    } catch (UnsupportedEncodingException e) {
+                                        e.printStackTrace();
+                                    }
+                                    if (x_offset + second_string_len <= print_width) {
+                                        second_data.setDatas(pingjieStr);
+                                        one = pingJieAtBottom(one, second_data, x_offset);
+                                        if (enterIndex == -1 || enterIndex == secondString.length() -1 ){
+                                            addTimes++;
+                                        }else {
+                                            second_data.setDatas(endStr);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } else {//FONT_SIZE_TIMES 不为2的
+                    one = EpsonPicture.getBitMapByStringReturnBitmaPath(one_data.getDatas());
+                    if (i + addTimes < allCount ){//没有越界
+                        PrintAndDatas second_data = lists.get(i + addTimes);
+                        if (!second_data.isBit){//不是位图数据
+                            if (one_data.FONT_SIZE_TIMES != second_data.FONT_SIZE_TIMES){//字体不同
+                                String lastString = one_data.getDatas();
+                                String secondString = second_data.getDatas();
+                                if (!lastString.substring(lastString.length()-1,lastString.length()).equals("\n") && !secondString.substring(0,1).equals("\n")){
+                                    //上一个字符串最后一位不是\n 可能还需判断长度是否超过
+                                    String[] lastStringArr = lastString.split("\n");
+                                    int x_offset = 0;
+                                    try {
+                                         x_offset = lastStringArr[lastStringArr.length -1].getBytes("GB18030").length * EpsonPicture.FONT_SIZE * one_data.bitWidthRate / 2;
+                                    } catch (UnsupportedEncodingException e) {
+                                        e.printStackTrace();
+                                    }
+                                    int enterIndex = secondString.indexOf("\n");
+                                    String pingjieStr = "";
+                                    if(enterIndex != -1)
+                                        pingjieStr = secondString.substring(0,enterIndex);
+                                    else
+                                        pingjieStr = secondString;
+                                    String endStr = secondString.substring(enterIndex + 1,secondString.length());
+                                    int second_string_len = 0;
+                                    try {
+                                        second_string_len = pingjieStr.replace("\n","").getBytes("GB18030").length * EpsonPicture.FONT_SIZE * second_data.bitWidthRate / 2;
+                                    } catch (UnsupportedEncodingException e) {
+                                        e.printStackTrace();
+                                    }
+                                    if (x_offset + second_string_len <= print_width) {
+                                        second_data.setDatas(pingjieStr);
+                                        one = pingJieSmallAndBigFont(one, second_data, x_offset);
+                                        if (enterIndex == -1 || enterIndex == secondString.length() -1 ){
+                                            addTimes++;
+                                        }else {
+                                            second_data.setDatas(endStr);
+                                        }
+                                        if (i + addTimes < allCount) {//没有越界
+                                            PrintAndDatas third_data = lists.get(i + addTimes);
+                                            if (!third_data.isBit) {//不是位图数据
+                                                if (second_data.FONT_SIZE_TIMES != third_data.FONT_SIZE_TIMES) {//字体不同
+                                                    lastString = second_data.getDatas();
+                                                    String thirdString = third_data.getDatas();
+                                                    if (!lastString.substring(lastString.length() - 1, lastString.length()).equals("\n") && !thirdString.substring(0, 1).equals("\n")) {
+                                                        //上一个字符串最后一位不是\n 可能还需判断长度是否超过
+                                                        x_offset += second_string_len;
+                                                        int third_string_len = 0;
+                                                        try {
+                                                            third_string_len = thirdString.replace("\n","").getBytes("GB18030").length * EpsonPicture.FONT_SIZE * third_data.bitWidthRate / 2;
+                                                        } catch (UnsupportedEncodingException e) {
+                                                            e.printStackTrace();
+                                                        }
+                                                        if (x_offset + third_string_len <= print_width) {
+                                                            one = pingJieAtBottom(one, third_data, x_offset);
+                                                            addTimes++;
+                                                            if (i + addTimes < allCount) {//没有越界
+                                                                PrintAndDatas fourth_data = lists.get(i + addTimes);
+                                                                if (!third_data.isBit) {//不是位图数据
+                                                                    if (third_data.FONT_SIZE_TIMES != fourth_data.FONT_SIZE_TIMES) {//字体不同
+                                                                        lastString = third_data.getDatas();
+                                                                        String fourthString = fourth_data.getDatas();
+                                                                        if (!lastString.substring(lastString.length() - 1, lastString.length()).equals("\n") && !fourthString.substring(0, 1).equals("\n")) {
+                                                                            //上一个字符串最后一位不是\n 可能还需判断长度是否超过
+                                                                            x_offset += third_string_len;
+                                                                            int fourth_string_len = 0;
+                                                                            try {
+                                                                                fourth_string_len = fourthString.replace("\n","").getBytes("GB18030").length * EpsonPicture.FONT_SIZE * fourth_data.bitWidthRate / 2;
+                                                                            } catch (UnsupportedEncodingException e) {
+                                                                                e.printStackTrace();
+                                                                            }
+                                                                            if (x_offset + fourth_string_len <= print_width) {
+                                                                                one = pingJieAtBottom(one, fourth_data, x_offset);
+                                                                                addTimes++;
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
-                bmps.add(one);
+
+
+//                if (i == allCount - 1 ) {
+//                    ReadPictureManage.GetInstance().GetReadPicture(0).Add(new BitmapWithOtherMsg(one,true));
+//                }else{
+//                    ReadPictureManage.GetInstance().GetReadPicture(0).Add(new BitmapWithOtherMsg(one,false));
+//                }
+//                bmps.add(one);
+                paths.add(one);
+                textPaths.add(one);
+//                String textBmp = null;
+//                if (i == allCount - 1 ) {//如果是最后一个 直接送给打印机
+//                    textBmp = SomeBitMapHandleWay.compoundOneBitPicWithBimapsReturnBitmap(textPaths);
+//                    textPaths.clear();
+//                    if (textBmp != null ){
+//                        ReadPictureManage.GetInstance().GetReadPicture(0).Add(new BitmapWithOtherMsg(textBmp,true));
+//                    }
+//                }else{
+//                    if (i + addTimes < allCount){//没有越界
+//                        PrintAndDatas next_data = lists.get(i + addTimes);
+//                        if (next_data.isBit){
+//                            textBmp = SomeBitMapHandleWay.compoundOneBitPicWithBimapsReturnBitmap(textPaths);
+//                            textPaths.clear();
+//                            if (textBmp != null ){
+//                                ReadPictureManage.GetInstance().GetReadPicture(0).Add(new BitmapWithOtherMsg(textBmp,false));
+//                            }
+//                        }
+//                    }else if(i + addTimes == allCount){
+//                        textBmp = SomeBitMapHandleWay.compoundOneBitPicWithBimapsReturnBitmap(textPaths);
+//                        textPaths.clear();
+//                        if (textBmp != null ){
+//                            ReadPictureManage.GetInstance().GetReadPicture(0).Add(new BitmapWithOtherMsg(textBmp,true));
+//                        }
+//                    }
+//                }
+                i = i + addTimes;
             }
         }
-        return bmps;
+        return paths;
     }
+
+    //统计字符在字符串中出现的次数
+    public static int countCharNum(String src,String one_char){
+        int times = 0;
+        for (int i = 0; i < src.length(); i++) {
+            if (src.substring(i,i+1).equals(one_char)){
+                times ++ ;
+            }
+        }
+        return times;
+    }
+
+    //拼接小字体和大字体的方法
+    public static String pingJieSmallAndBigFont(String srcPath,PrintAndDatas one_data,int x_offset){
+        int print_width = SomeBitMapHandleWay.PRINT_WIDTH;
+        String is_58 = SavePasswd.getInstace().getIp(SavePasswd.IS58PAPPER,"false");
+        if (is_58.equals("true")){
+            print_width = SomeBitMapHandleWay.WIDTH_58;
+        }
+        Bitmap src = BitmapFactory.decodeFile(srcPath);
+        Bitmap one = BitmapFactory.decodeFile(EpsonPicture.getBitMapByPrintAndDatasReturnBitmap(one_data));
+        Bitmap dest = Bitmap.createBitmap(print_width, src.getHeight() - EpsonPicture.SMALL_LINE_HEIGHT + one.getHeight(), Bitmap.Config.RGB_565);
+        Canvas canvas = new Canvas(dest);
+        canvas.drawColor(Color.WHITE);
+        Rect topSrcRect = new Rect(0,0,src.getWidth(),src.getHeight() - EpsonPicture.SMALL_LINE_HEIGHT);
+        Rect topDestRect = new Rect(0,0,src.getWidth(),src.getHeight() - EpsonPicture.SMALL_LINE_HEIGHT);
+
+        Rect leftSrcRect = new Rect(0,src.getHeight() - EpsonPicture.SMALL_LINE_HEIGHT,src.getWidth(),src.getHeight());
+        Rect leftDestRect = new Rect(0,dest.getHeight() - EpsonPicture.SMALL_LINE_HEIGHT,src.getWidth(),dest.getHeight());
+
+        Rect rightSrcRect = new Rect(0,0,one.getWidth(),one.getHeight());
+        Rect rightDestRect = new Rect(x_offset,dest.getHeight() - one.getHeight(),one.getWidth() + x_offset,dest.getHeight());
+
+        canvas.drawBitmap(src,topSrcRect,topDestRect,null);
+        canvas.drawBitmap(src,leftSrcRect,leftDestRect,null);
+        canvas.drawBitmap(one,rightSrcRect,rightDestRect,null);
+
+        canvas.save(Canvas.ALL_SAVE_FLAG);
+        canvas.restore();
+
+        String bmpPath = EpsonPicture.TEMPBITPATH + File.separator + "ucast_bit_and_string_" + UUID.randomUUID().toString().replace("-", "")+"_2552" + ".bmp";
+        EpsonPicture.saveBmpUse1Bit(dest,bmpPath);
+
+        canvas =null;
+        if (src != null && !src.isRecycled()){
+            src.recycle();
+            src = null;
+        }
+        if (one != null && !one.isRecycled()){
+            one.recycle();
+            one = null;
+        }
+        if (dest != null && !dest.isRecycled()){
+            dest.recycle();
+            dest = null;
+        }
+
+        return bmpPath;
+    }
+
+    //直接在图片的底部拼接上一段图片
+    public static String pingJieAtBottom(String srcPath,PrintAndDatas one_data,int x_offset){
+        int print_width = SomeBitMapHandleWay.PRINT_WIDTH;
+        String is_58 = SavePasswd.getInstace().getIp(SavePasswd.IS58PAPPER,"false");
+        if (is_58.equals("true")){
+            print_width = SomeBitMapHandleWay.WIDTH_58;
+        }
+        String bmpPath = EpsonPicture.TEMPBITPATH + File.separator + "ucast_bit_and_string_" + UUID.randomUUID().toString().replace("-", "")+"_2553" + ".bmp";
+        Bitmap src = BitmapFactory.decodeFile(srcPath);
+        Bitmap one = BitmapFactory.decodeFile(EpsonPicture.getBitMapByPrintAndDatasReturnBitmap(one_data));
+        Bitmap dest = Bitmap.createBitmap(print_width, src.getHeight(), Bitmap.Config.RGB_565);
+        Canvas canvas = new Canvas(dest);
+        canvas.drawColor(Color.WHITE);
+        Rect topSrcRect = new Rect(0,0,src.getWidth(),src.getHeight());
+        Rect topDestRect = new Rect(0,0,src.getWidth(),src.getHeight());
+
+        Rect rightSrcRect = new Rect(0,0,one.getWidth(),one.getHeight());
+        Rect rightDestRect = new Rect(x_offset,dest.getHeight() - one.getHeight(),one.getWidth() + x_offset,dest.getHeight());
+
+        canvas.drawBitmap(src,topSrcRect,topDestRect,null);
+        canvas.drawBitmap(one,rightSrcRect,rightDestRect,null);
+        canvas.save(Canvas.ALL_SAVE_FLAG);
+        canvas.restore();
+        EpsonPicture.saveBmpUse1Bit(dest,bmpPath);
+        canvas = null;
+        if (src != null && !src.isRecycled()){
+            src.recycle();
+            src = null;
+        }
+        if (one != null && !one.isRecycled()){
+            one.recycle();
+            one = null;
+        }
+
+        return bmpPath;
+    }
+
 
     public static void saveAsBitmapWithByteData(byte[] datas ,int with ,String path) {
         FileOutputStream fos = null;
@@ -768,9 +1164,9 @@ public class EpsonParseDemo {
      *
      *    宽度是点的宽度  如384 一般为8 的倍数
      * */
-    public static void saveAsBitmapWithByteDataUse1Bit(byte[] datas ,int with ,String path) {
+    public static void saveAsBitmapWithByteDataUse1Bit(byte[] datas , int width, String path) {
         FileOutputStream fos = null;
-        int nBmpWidth = with;
+        int nBmpWidth = width;
 
         try {
             fos = new FileOutputStream(new File(path));

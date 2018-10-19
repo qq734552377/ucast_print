@@ -35,7 +35,7 @@ public class EpsonPicture {
     private final static String BIT_NAME = "/Ucast/ucast.bmp";
 
 
-    private final static int FONT_SIZE = 24 ;
+    public final static int FONT_SIZE = 24 ;
     private static int LINE_STRING_NUMBER = SomeBitMapHandleWay.PRINT_WIDTH / ( FONT_SIZE / 2) ;
     private static int LINE_BIG_STRING_NUMBER = 21 ;
     private final static int OFFSET_X = 0 ;
@@ -43,11 +43,12 @@ public class EpsonPicture {
 
     private final static int FONT_SIZE_TIMES = 1 ;
     private final static int LINE_HEIGHT = 40 ;
-    private final static int SMALL_LINE_HEIGHT = 30 ;
+    public final static int SMALL_LINE_HEIGHT = 26 ;
     private final static String FONT = "simsun.ttc" ;
     private final static int BITMAP_END_POINT = 384 ;
     private final static int CUT_PAPER_HEIGHT = 40 ;
     private final static int SMALL_CUT_PAPER_HEIGHT = 30 ;
+    public static Typeface FONT_TYPE = Typeface.createFromAsset(ExceptionApplication.getInstance().getAssets(),FONT);
 
     public static String getBitMap(List<PrintAndDatas> printAndDatasList) {
 
@@ -98,42 +99,109 @@ public class EpsonPicture {
      *  将给定的打印数据生成bmp图片 返回路径
      * */
     public static String getBitMapByString(String string ,String outPath) {
-        Bitmap bmp = getBitMapByStringReturnBitmap(string);
-        String path = saveBmpUse1Bit(bmp ,outPath);
-        return path;
+//        Bitmap bmp = getBitMapByStringReturnBitmaPath(string);
+//        String path = saveBmpUse1Bit(bmp ,outPath);
+//        if (bmp != null && !bmp.isRecycled()) {
+//            bmp.recycle();
+//            bmp = null;
+//        }
+        return getBitMapByStringReturnBitmaPath(string);
     }
 
     /**
-     *  将给定的打印数据生成bmp图片 返回Bitmap
+     *  将给定的打印数据生成bmp图片 返回Bitmap的文件路径
      * */
-    public static Bitmap getBitMapByStringReturnBitmap(String string) {
+    public static String getBitMapByStringReturnBitmaPath(String string) {
         int width = SomeBitMapHandleWay.PRINT_WIDTH;
         String is_58 = SavePasswd.getInstace().getIp(SavePasswd.IS58PAPPER,"false");
         if (is_58.equals("true")){
             width = SomeBitMapHandleWay.WIDTH_58;
         }
         LINE_STRING_NUMBER = width / ( FONT_SIZE / 2) ;
-        if (string.substring(0,1).equals("\n"))
-            string = string.substring(1,string.length());
+        int firstEnterIndex = string.indexOf("\n");
+        if (firstEnterIndex != -1 && firstEnterIndex + 1 < width / 12 ) {  //小于一行的空格数据全部忽略
+            if (string.substring(0,firstEnterIndex).replace(" ","").equals(""))
+                string = string.substring(firstEnterIndex + 1, string.length());
+        }
         List<String> list = getLineStringDatas(string);
         int Height = list.size() * SMALL_LINE_HEIGHT;
-        Bitmap bmp = Bitmap.createBitmap(width, Height + 4 , Bitmap.Config.RGB_565);
+        Bitmap bmp = Bitmap.createBitmap(width, Height , Bitmap.Config.RGB_565);
         Canvas canvas = new Canvas(bmp);
         canvas.drawColor(Color.WHITE);
         Paint print = new Paint();
         print.setColor(Color.BLACK);
         print.setTextSize(FONT_SIZE);
-        Typeface font = Typeface.createFromAsset(ExceptionApplication.getInstance().getAssets(),FONT);
-        print.setTypeface(Typeface.create(font,Typeface.NORMAL));
+        print.setTypeface(Typeface.create(FONT_TYPE,Typeface.NORMAL));
 //        print.setTypeface(Typeface.MONOSPACE);
-        int offsetY = (SMALL_LINE_HEIGHT - FONT_SIZE) / 2;
+        int offsetY =  4;
         for (int i = 0; i < list.size(); i++) {
-            canvas.drawText(list.get(i), OFFSET_X, i * SMALL_LINE_HEIGHT + SMALL_CUT_PAPER_HEIGHT - offsetY, print);
+            canvas.drawText(list.get(i), OFFSET_X, i * SMALL_LINE_HEIGHT + SMALL_LINE_HEIGHT - offsetY, print);
         }
         canvas.save(Canvas.ALL_SAVE_FLAG);
         canvas.restore();
 
-        return bmp;
+        String bmpPath = EpsonPicture.TEMPBITPATH + File.separator + "ucast_bit_and_string_" + UUID.randomUUID().toString().replace("-", "")+"_2552" + ".bmp";
+        saveBmpUse1Bit(bmp,bmpPath);
+
+        canvas = null;
+        if (bmp != null && !bmp.isRecycled()){
+            bmp.recycle();
+            bmp = null;
+        }
+
+        return bmpPath;
+    }
+    /**
+     *  将不超过单行的文字生成对应的图片 返回Bitmap的文件路径
+     * */
+    public static String getBitMapByPrintAndDatasReturnBitmap(PrintAndDatas one_data) {
+        String string = one_data.datas.replace("\n","");
+        int width = 0;
+        try {
+            width = string.getBytes("GB18030").length * FONT_SIZE / 2;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        width = (width + 7) / 8 * 8;
+        int height = SMALL_LINE_HEIGHT;
+        int offsetY = (SMALL_LINE_HEIGHT - FONT_SIZE) / 2;
+        if (one_data.bitHeightRate == 2){
+            height = 25;
+            offsetY = 4;
+        }
+
+        Bitmap bmp = Bitmap.createBitmap(width, height , Bitmap.Config.RGB_565);
+        Canvas canvas = new Canvas(bmp);
+        canvas.drawColor(Color.WHITE);
+        Paint print = new Paint();
+        print.setColor(Color.BLACK);
+        print.setTextSize(FONT_SIZE);
+
+        print.setTypeface(Typeface.create(FONT_TYPE,Typeface.NORMAL));
+
+        canvas.drawText(string, OFFSET_X, height - offsetY, print);
+        canvas.save(Canvas.ALL_SAVE_FLAG);
+        canvas.restore();
+
+        print.setTypeface(null);
+        byte[] sources = getOneBitBytesFromBitmap(bmp);
+
+        canvas = null;
+        if (bmp != null && !bmp.isRecycled()) {
+            bmp.recycle();
+            bmp = null;
+        }
+
+        if(one_data.bitWidthRate == 2){
+            sources =EpsonPicture.getTwiceWidthData(sources , width / 8);
+        }
+        if (one_data.bitHeightRate == 2){
+            sources =EpsonPicture.getTwiceHeighData(sources , width * one_data.bitWidthRate / 8);
+        }
+        String bmpPath = EpsonPicture.TEMPBITPATH + File.separator + "ucast_bit_and_string_" + UUID.randomUUID().toString().replace("-", "") + "_2557" +".bmp";
+        int save_width = width * one_data.bitWidthRate;
+        EpsonParseDemo.saveAsBitmapWithByteDataUse1Bit(sources,save_width, bmpPath);
+        return bmpPath;
     }
     /**
      *  将给定的打印数据生成bmp图片 返回Bitmap
@@ -184,8 +252,7 @@ public class EpsonPicture {
         Paint print = new Paint();
         print.setColor(Color.BLACK);
         print.setTextSize(36);
-        Typeface font = Typeface.createFromAsset(ExceptionApplication.getInstance().getAssets(),FONT);
-        print.setTypeface(Typeface.create(font,Typeface.NORMAL));
+        print.setTypeface(Typeface.create(FONT_TYPE,Typeface.NORMAL));
 //        print.setTypeface(Typeface.MONOSPACE);
         int offsetY = 2;
         for (int i = 0; i < list.size(); i++) {
@@ -415,23 +482,23 @@ public class EpsonPicture {
             return null;
         int w = bitmap.getWidth();
         int h = bitmap.getHeight();
-        byte[] datas = addBMP_RGB_888(bitmap);
+        byte[] datas = getSaveOnebitBmpData(bitmap);
 
         int line_byte_num = w / 8;
         int saveBmpHeight = h;
-        int saveBmpWith = ((w + 31)/32) * 32;
-        int bufferSize =  saveBmpHeight * saveBmpWith / 8;
+        int saveBmpWidth = ((w + 31)/32) * 32;
+        int bufferSize =  saveBmpHeight * saveBmpWidth / 8;
 
         byte[] header = addBMPImageHeader(62 + bufferSize );
-        byte[] infos = addBMPImageInfosHeader(saveBmpWith, saveBmpHeight,bufferSize);
+        byte[] infos = addBMPImageInfosHeader(saveBmpWidth, saveBmpHeight,bufferSize);
         byte[] colortable = addBMPImageColorTable();
 
         // 像素扫描 并用0x00补位
         byte bmpData[] = new byte[bufferSize];
         for (int i = 0; i < saveBmpHeight; i++) {
-            for (int j = 0; j < saveBmpWith / 8 ; j++) {
+            for (int j = 0; j < saveBmpWidth / 8 ; j++) {
                 int srcDataIndex = i * line_byte_num + j;
-                int destDataIndex = i * (saveBmpWith / 8) + j;
+                int destDataIndex = i * (saveBmpWidth / 8) + j;
 
                 if(j < line_byte_num) {
                     bmpData[destDataIndex] = datas[srcDataIndex];
@@ -464,6 +531,10 @@ public class EpsonPicture {
 
         } catch (Exception e){
             return null;
+        }
+        if (bitmap != null && !bitmap.isRecycled()) {
+            bitmap.recycle();
+            bitmap = null;
         }
         return path;
     }
@@ -564,7 +635,7 @@ public class EpsonPicture {
     }
 
     //将bitmap对象中像素数据转换成位图深度为1的bmp数据
-    private static byte[] addBMP_RGB_888(Bitmap bitmap) {
+    private static byte[] getSaveOnebitBmpData(Bitmap bitmap) {
         int w = bitmap.getWidth();
         int h = bitmap.getHeight();
         int len = w * h;
@@ -610,6 +681,42 @@ public class EpsonPicture {
         }
 
         return buffer;
+    }
+    //将bitmap对象中像素数据转换成位图深度为1的bmp数据 非存储的数据格式
+    private static byte[] getOneBitBytesFromBitmap(Bitmap bitmap) {
+        int w = bitmap.getWidth();
+        int h = bitmap.getHeight();
+        int len = w * h;
+        int[] src = new int[ len ];
+        bitmap.getPixels(src, 0, w, 0, 0, w, h);//取得BITMAP的所有像素点
+        int bufflen = 0;
+        int[] tmp = new int[3];
+        int index = 0,bitindex = 1;
+        //将8字节变成1个字节,不足补0
+        if (len% 8 != 0){
+            bufflen = len / 8 + 1;
+        } else {
+            bufflen = len / 8;
+        }
+        byte[] dest = new byte[bufflen];
+        for (int i = 0; i <= len - w ; i += w) {
+            int end = i + w - 1, start = i;
+            for (int j = start; j <= end; j++) {
+                tmp[0] = src[j]  & 0x000000FF;
+                tmp[1] = src[j]  & 0x0000FF00;
+                tmp[2] = src[j]  & 0x00FF0000;
+                if (bitindex > 8) {
+                    index += 1;
+                    bitindex = 1;
+                }
+                if (tmp[0] + tmp[1] +tmp[2] != 0x00FFFFFF) {
+                    dest[index] = (byte) (dest[index] | (0x01 << 8-bitindex));
+                }
+                bitindex++;
+            }
+        }
+
+        return dest;
     }
 
 
@@ -670,6 +777,7 @@ public class EpsonPicture {
         stream.write(buffer);
     }
 
+    //测试方法
     public static void strToBmp() throws IOException {
         String path = ALBUM_PATH + BIT_NAME;
 
@@ -760,6 +868,7 @@ public class EpsonPicture {
 
     }
 
+    //存成24位图像
     public static void saveDataToBmp(byte[] datas){
         String path = ALBUM_PATH + BIT_NAME;
 
@@ -844,10 +953,7 @@ public class EpsonPicture {
         }
     }
 
-
-
-
-
+    //效率不怎么高的取图片数据
     public static byte[] TurnBytes(Bitmap bitmap) {
         int W = bitmap.getWidth();
         int PW = SomeBitMapHandleWay.PRINT_WIDTH;
@@ -903,6 +1009,10 @@ public class EpsonPicture {
                 }
                 bt[i * PW / 8 + j / 8] = value;
             }
+        }
+        if (bitmap != null && !bitmap.isRecycled()) {
+            bitmap.recycle();
+            bitmap = null;
         }
         return bt;
     }

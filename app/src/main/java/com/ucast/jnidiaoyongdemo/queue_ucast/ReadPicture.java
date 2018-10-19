@@ -95,6 +95,10 @@ public class ReadPicture {
                     //解析获得了一张图片的完整信息PictureModel
                     info = WholeBytes(pictureByte);
                     info.setPath(pathName);
+                    if (bitmap != null && !bitmap.isRecycled()) {
+                        bitmap.recycle();
+                        bitmap = null;
+                    }
                 }else{
                     info = new PictureModel();
                 }

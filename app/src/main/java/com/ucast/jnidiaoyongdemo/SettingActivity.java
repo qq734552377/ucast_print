@@ -8,11 +8,13 @@ import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.RadioGroup;
 import android.widget.Switch;
+import android.widget.TextView;
 import android.widget.VideoView;
 
 import com.ucast.jnidiaoyongdemo.Model.Config;
 import com.ucast.jnidiaoyongdemo.bmpTools.EpsonPicture;
 import com.ucast.jnidiaoyongdemo.testActs.BaseNavActivity;
+import com.ucast.jnidiaoyongdemo.tools.ExceptionApplication;
 import com.ucast.jnidiaoyongdemo.tools.MyTools;
 import com.ucast.jnidiaoyongdemo.tools.SavePasswd;
 import com.ucast.jnidiaoyongdemo.tools.YinlianHttpRequestUrl;
@@ -35,6 +37,8 @@ public class SettingActivity extends BaseNavActivity {
     RadioGroup select_papper;
     @ViewInject(R.id.st_open_log)
     Switch open_log;
+    @ViewInject(R.id.tv_apk_version_show)
+    TextView apk_version;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -79,6 +83,7 @@ public class SettingActivity extends BaseNavActivity {
         }else{
             open_log.setChecked(false);
         }
+        apk_version.setText(MyTools.getPackageInfo(this,"com.ucast.jnidiaoyong_print").versionName);
     }
 
     @Event(R.id.set_host_btn)

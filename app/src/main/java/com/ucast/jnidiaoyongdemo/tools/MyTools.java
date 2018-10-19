@@ -484,6 +484,26 @@ public class MyTools {
         }
         return s;
     }
+    //版本号
+    public static int getVersionCode(Context context, String packageName) {
+        return getPackageInfo(context, packageName).versionCode;
+    }
+
+    public static PackageInfo getPackageInfo(Context context, String packageName) {
+        PackageInfo pi = null;
+
+        try {
+            PackageManager pm = context.getPackageManager();
+            pi = pm.getPackageInfo(packageName,
+                    PackageManager.GET_CONFIGURATIONS);
+
+            return pi;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return pi;
+    }
 
     /*** 获取apk文件的的版本号 ***/
     public static String getApkversion(){

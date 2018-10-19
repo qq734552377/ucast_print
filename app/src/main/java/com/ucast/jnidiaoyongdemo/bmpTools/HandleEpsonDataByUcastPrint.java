@@ -1,18 +1,10 @@
 package com.ucast.jnidiaoyongdemo.bmpTools;
 
-import android.graphics.Bitmap;
-
 import com.ucast.jnidiaoyongdemo.Model.BitmapWithOtherMsg;
 import com.ucast.jnidiaoyongdemo.Model.ReadPictureManage;
-import com.ucast.jnidiaoyongdemo.queue_ucast.ReadPicture;
 import com.ucast.jnidiaoyongdemo.tools.ExceptionApplication;
 import com.ucast.jnidiaoyongdemo.tools.MyTools;
-import com.ucast.jnidiaoyongdemo.tools.YinlianHttpRequestUrl;
-import com.ucast.jnidiaoyongdemo.xutilEvents.TishiMsgEvent;
 
-import org.greenrobot.eventbus.EventBus;
-
-import java.io.File;
 import java.util.List;
 
 /**
@@ -54,9 +46,11 @@ public class HandleEpsonDataByUcastPrint {
 
             List<PrintAndDatas> goodPrintdatas = EpsonParseDemo.makeListIWant(printdatas);
 
-            List<Bitmap> bmps = EpsonParseDemo.parseEpsonBitDataAndStringReturnBitmap(goodPrintdatas);
+            List<String> paths = EpsonParseDemo.parseEpsonBitDataAndStringReturnBitmapPaths(goodPrintdatas);
 
-            path = SomeBitMapHandleWay.compoundOneBitPicWithBimaps(bmps);
+            path = SomeBitMapHandleWay.compoundOneBitPic(paths);
+            //加入打印队列
+            ReadPictureManage.GetInstance().GetReadPicture(0).Add(new BitmapWithOtherMsg(path,true));
             //取出文字传给后台
             StringBuilder sb = new StringBuilder();
             for (int i = 0; i < goodPrintdatas.size(); i++) {
@@ -65,6 +59,7 @@ public class HandleEpsonDataByUcastPrint {
                     sb.append(one.getDatas());
                 }
             }
+            goodPrintdatas.clear();
             if (path != null && !path.equals("") && isUpload){
                 MyTools.uploadDataAndFileWithURLByQueue(sb.toString(),path);
             }

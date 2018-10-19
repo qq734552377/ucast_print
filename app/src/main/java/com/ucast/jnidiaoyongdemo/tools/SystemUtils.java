@@ -4,6 +4,9 @@ import android.text.TextUtils;
 import android.util.Log;
 
 import com.ucast.jnidiaoyongdemo.Serial.UsbWithByteSerial;
+import com.ucast.jnidiaoyongdemo.xutilEvents.TishiMsgEvent;
+
+import org.greenrobot.eventbus.EventBus;
 
 import java.lang.reflect.Method;
 
@@ -37,14 +40,18 @@ public class SystemUtils {
         }
     }
     public static String USBPROPERITY = "printer,acm,hid,adb";
+    public static boolean ISGETUSBPROPERITY = true;
 
     public static void setSysUsbToNone(){
+        if (ISGETUSBPROPERITY)
+            USBPROPERITY = SystemUtils.getSystemPropertyForJava(SYSUSBKEY,"printer,acm,hid,adb");
+//        EventBus.getDefault().post(new TishiMsgEvent(USBPROPERITY));
         SystemUtils.setSystemPropertyForJava(SYSUSBKEY,"none");
-        USBPROPERITY = SystemUtils.getSystemPropertyForJava(SYSUSBKEY,"printer,acm,hid,adb");
     }
 
     public static void setSysUsbToUSb(){
-        SystemUtils.setSystemPropertyForJava(SYSUSBKEY,"printer,acm,hid,adb");
+//        SystemUtils.setSystemPropertyForJava(SYSUSBKEY,"printer,acm,hid,adb");
+        SystemUtils.setSystemPropertyForJava(SYSUSBKEY,USBPROPERITY);
     }
 
 }
