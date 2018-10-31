@@ -2,6 +2,8 @@ package com.ucast.jnidiaoyongdemo.bmpTools;
 
 import android.graphics.Typeface;
 
+import com.ucast.jnidiaoyongdemo.tools.SavePasswd;
+
 import java.lang.reflect.Type;
 
 /**
@@ -19,6 +21,10 @@ public class PrintAndDatas {
     public int LINE_HEIGHT = 40 ;
     public int FONT_SIZE_TYPE = Typeface.NORMAL ;
     public String FONT = "simsun.ttf" ;
+
+    //格式的控制  左对齐 0x00 居中 0x01 右对齐 0x02
+    public int justification = 0;
+
 
     //是否是位图
     public boolean isBit = false;
@@ -71,4 +77,14 @@ public class PrintAndDatas {
     public void setBitHeight(int bitHeight) {
         this.bitHeight = bitHeight;
     }
+
+    public int getJustification() {
+        return justification;
+    }
+
+    public void setJustification(int justification) {
+        this.justification = justification;
+    }
+
+
 }

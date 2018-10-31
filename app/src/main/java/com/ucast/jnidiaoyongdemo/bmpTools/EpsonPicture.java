@@ -52,11 +52,7 @@ public class EpsonPicture {
 
     public static String getBitMap(List<PrintAndDatas> printAndDatasList) {
 
-        int width = SomeBitMapHandleWay.PRINT_WIDTH;
-        String is_58 = SavePasswd.getInstace().getIp(SavePasswd.IS58PAPPER,"false");
-        if (is_58.equals("true")){
-            width = SomeBitMapHandleWay.WIDTH_58;
-        }
+        int width = EpsonPicture.getPrintWidth();
         int line_sizes = 0 ;
         for (int i = 0; i < printAndDatasList.size(); i++) {
             PrintAndDatas one = printAndDatasList.get(i);
@@ -112,11 +108,7 @@ public class EpsonPicture {
      *  将给定的打印数据生成bmp图片 返回Bitmap的文件路径
      * */
     public static String getBitMapByStringReturnBitmaPath(String string) {
-        int width = SomeBitMapHandleWay.PRINT_WIDTH;
-        String is_58 = SavePasswd.getInstace().getIp(SavePasswd.IS58PAPPER,"false");
-        if (is_58.equals("true")){
-            width = SomeBitMapHandleWay.WIDTH_58;
-        }
+        int width = EpsonPicture.getPrintWidth();
         LINE_STRING_NUMBER = width / ( FONT_SIZE / 2) ;
         int firstEnterIndex = string.indexOf("\n");
         if (firstEnterIndex != -1 && firstEnterIndex + 1 < width / 12 ) {  //小于一行的空格数据全部忽略
@@ -152,9 +144,57 @@ public class EpsonPicture {
         return bmpPath;
     }
     /**
+     *  将给定的打印数据生成bmp图片 返回Bitmap的文件路径
+     * */
+    public static String getBitMapByStringReturnBitmaPath(PrintAndDatas printAndDatas) {
+        if (printAndDatas.datas.equals(""))
+            return null;
+        int width = EpsonPicture.getPrintWidth();
+        LINE_STRING_NUMBER = width / ( FONT_SIZE / 2) ;
+        String string = printAndDatas.getDatas();
+        int firstEnterIndex = string.indexOf("\n");
+        if (firstEnterIndex != -1 && firstEnterIndex + 1 < width / 12 ) {  //小于一行的空格数据全部忽略
+            if (string.substring(0,firstEnterIndex).replace(" ","").equals(""))
+                string = string.substring(firstEnterIndex + 1, string.length());
+        }
+        List<String> list = getLineStringDatas(string);
+        if (printAndDatas.getJustification() == 1){//文字居中
+            list = getCenterString(list,LINE_STRING_NUMBER);
+        }else if (printAndDatas.getJustification() == 2){//文字右对齐
+            list = getRightString(list,LINE_STRING_NUMBER);
+        }
+        if (list.size() == 0)
+            return null;
+        int Height = list.size() * SMALL_LINE_HEIGHT;
+        Bitmap bmp = Bitmap.createBitmap(width, Height , Bitmap.Config.RGB_565);
+        Canvas canvas = new Canvas(bmp);
+        canvas.drawColor(Color.WHITE);
+        Paint print = getPaint();
+//        print.setTypeface(Typeface.MONOSPACE);
+        int offsetY =  4;
+        for (int i = 0; i < list.size(); i++) {
+            canvas.drawText(list.get(i), OFFSET_X, i * SMALL_LINE_HEIGHT + SMALL_LINE_HEIGHT - offsetY, print);
+        }
+        canvas.save(Canvas.ALL_SAVE_FLAG);
+        canvas.restore();
+
+        String bmpPath = EpsonPicture.TEMPBITPATH + File.separator + "ucast_bit_and_string_" + UUID.randomUUID().toString().replace("-", "")+"_2552" + ".bmp";
+        saveBmpUse1Bit(bmp,bmpPath);
+
+        canvas = null;
+        if (bmp != null && !bmp.isRecycled()){
+            bmp.recycle();
+            bmp = null;
+        }
+
+        return bmpPath;
+    }
+    /**
      *  将不超过单行的文字生成对应的图片 返回Bitmap的文件路径
      * */
     public static String getBitMapByPrintAndDatasReturnBitmap(PrintAndDatas one_data) {
+        if (one_data.datas.equals(""))
+            return null;
         String string = one_data.datas.replace("\n","");
         int width = 0;
         try {
@@ -163,35 +203,70 @@ public class EpsonPicture {
             e.printStackTrace();
         }
         width = (width + 7) / 8 * 8;
-        int height = SMALL_LINE_HEIGHT;
-        int offsetY = (SMALL_LINE_HEIGHT - FONT_SIZE) / 2;
-        if (one_data.bitHeightRate == 2){
-            height = 25;
-            offsetY = 4;
+        int print_width = EpsonPicture.getPrintWidth();
+        LINE_STRING_NUMBER = print_width / (FONT_SIZE * one_data.bitWidthRate / 2);
+        // 如果文字的内容超过一行
+        if ( width * one_data.bitWidthRate > print_width){
+            List<String> list = getLineStringDatas(one_data.getDatas());
+            if (one_data.getJustification() == 1){//文字居中
+                list = getCenterString(list,LINE_STRING_NUMBER);
+            }else if (one_data.getJustification() == 2){//文字右对齐
+                list = getRightString(list,LINE_STRING_NUMBER);
+            }
+            if (list.size() == 0)
+                return null;
+            int height = SMALL_LINE_HEIGHT * list.size();
+            width = print_width / one_data.bitWidthRate;
+            int offsetY= 4;
+            Bitmap bmp = Bitmap.createBitmap(width,height,Bitmap.Config.RGB_565);
+            Canvas canvas = new Canvas(bmp);
+            canvas.drawColor(Color.WHITE);
+            Paint paint = getPaint();
+            for (int i = 0; i < list.size(); i++) {
+                canvas.drawText(list.get(i), OFFSET_X, i * SMALL_LINE_HEIGHT + SMALL_LINE_HEIGHT - offsetY,paint);
+            }
+            canvas.save(Canvas.ALL_SAVE_FLAG);
+            canvas.restore();
+            paint.setTypeface(null);
+
+            byte[] sources = getOneBitBytesFromBitmap(bmp);
+
+            canvas = null;
+            if (bmp != null && !bmp.isRecycled()) {
+                bmp.recycle();
+                bmp = null;
+            }
+
+            if(one_data.bitWidthRate == 2){
+                sources =EpsonPicture.getTwiceWidthData(sources , width / 8);
+            }
+            if (one_data.bitHeightRate == 2){
+                sources =EpsonPicture.getTwiceHeighData(sources , width * one_data.bitWidthRate / 8);
+            }
+            String bmpPath = EpsonPicture.TEMPBITPATH + File.separator + "ucast_bit_and_string_" + UUID.randomUUID().toString().replace("-", "") + "_2557" +".bmp";
+            int save_width = width * one_data.bitWidthRate;
+            EpsonParseDemo.saveAsBitmapWithByteDataUse1Bit(sources,save_width, bmpPath);
+            return bmpPath;
+
         }
+        int height = SMALL_LINE_HEIGHT;
+        int offsetY = 4;
 
         Bitmap bmp = Bitmap.createBitmap(width, height , Bitmap.Config.RGB_565);
         Canvas canvas = new Canvas(bmp);
         canvas.drawColor(Color.WHITE);
-        Paint print = new Paint();
-        print.setColor(Color.BLACK);
-        print.setTextSize(FONT_SIZE);
-
-        print.setTypeface(Typeface.create(FONT_TYPE,Typeface.NORMAL));
+        Paint print = getPaint();
 
         canvas.drawText(string, OFFSET_X, height - offsetY, print);
         canvas.save(Canvas.ALL_SAVE_FLAG);
         canvas.restore();
-
         print.setTypeface(null);
         byte[] sources = getOneBitBytesFromBitmap(bmp);
-
         canvas = null;
         if (bmp != null && !bmp.isRecycled()) {
             bmp.recycle();
             bmp = null;
         }
-
         if(one_data.bitWidthRate == 2){
             sources =EpsonPicture.getTwiceWidthData(sources , width / 8);
         }
@@ -268,25 +343,41 @@ public class EpsonPicture {
      *
      * */
     public static List<String> getLineStringDatas(String string){
-        String[] dataString = null;
-        dataString = string.replace("\r","").split("\n");
+        string = string.replace("\r","");
+//        String[] dataString = null;
+//        dataString = string.split("\n");
+
+        List<String> src = new ArrayList<>();
+        int offset = 0;
+        int index = string.indexOf("\n",offset);
+        while (index != -1){
+            src.add(string.substring(offset,index));
+            offset = index + 1;
+            index = string.indexOf("\n",offset);
+        }
+
+        if (offset < string.length()){
+            src.add(string.substring(offset));
+        }
+
         List<String> list = new ArrayList<>();
         List<String> splistlist;
-        for (int i = 0; i < dataString.length; i++) {
+        for (int i = 0; i < src.size(); i++) {
+            String stringData = src.get(i);
             byte[] one =null;
             try {
-                 one = dataString[i].getBytes("GB18030");
+                 one = stringData.getBytes("GB18030");
             } catch (UnsupportedEncodingException e) {
                 e.printStackTrace();
             }
-            int len = one == null ? dataString[i].getBytes().length : one.length;
+            int len = one == null ? stringData.getBytes().length : one.length;
             if ( len > LINE_STRING_NUMBER) {
-                splistlist = splitString(dataString[i]);
+                splistlist = splitString(stringData);
                 for (int t = 0; t < splistlist.size(); t++) {
                     list.add(splistlist.get(t));
                 }
             } else {
-                list.add(dataString[i]);
+                list.add(stringData);
             }
         }
 
@@ -1100,6 +1191,78 @@ public class EpsonPicture {
         return des;
     }
 
+     //获取基于打印纸宽度的居中的图片数据 宽度是单位8个点即1个byte
+    public static byte[] getCenterBitData(byte[] src,int width){
+        int printWidth = EpsonPicture.getPrintWidth();
+        int one_line_max_number = printWidth / 8;
+        if (width >= one_line_max_number)
+            return src;
+        int offsetNumber = (one_line_max_number - width) / 2;
+        return getOffsetBitData(src,width,offsetNumber);
+    }
+    //获取基于打印纸宽度的右对齐的图片数据 宽度是单位8个点即1个byte
+    public static byte[] getRightBitData(byte[] src,int width){
+        int printWidth = EpsonPicture.getPrintWidth();
+        int one_line_max_number = printWidth / 8;
+        if (width >= one_line_max_number)
+            return src;
+        int offsetNumber = one_line_max_number - width;
+        return getOffsetBitData(src,width,offsetNumber);
+    }
+    //获取偏移量为offsetNumber的图片数据 宽度是单位8个点即1个byte
+    public static byte[] getOffsetBitData(byte[] src, int width, int offsetNumber){
+        int height = src.length / width;
+        byte[] dest = new byte[(offsetNumber + width) * height];
+        for (int i = 0; i < height; i++) {
+            System.arraycopy(src,i * width,dest,offsetNumber * (i + 1) + width * i,width);
+        }
+        return dest;
+    }
+
+    //获取基于打印纸宽度的居中文字
+    public static List<String> getCenterString(List<String> src,int oneLineNumber){
+        for (int i = 0; i < src.size(); i++) {
+            String one = src.get(i);
+            int one_string_number =  0;
+            try {
+                one_string_number = one.getBytes("GB18030").length;
+            }catch (Exception e){}
+            if (one_string_number >= oneLineNumber)
+                continue;
+            int offsetBlankNumber = (oneLineNumber - one_string_number) / 2;
+            if (offsetBlankNumber <= 0)
+                continue;
+            src.set(i,getOffsetString(one,offsetBlankNumber));
+        }
+        return src;
+    }
+    //获取基于打印纸宽度的右对齐文字
+    public static List<String> getRightString(List<String> src,int oneLineNumber){
+        for (int i = 0; i < src.size(); i++) {
+            String one = src.get(i);
+            int one_string_number =  0;
+            try {
+                one_string_number = one.getBytes("GB18030").length;
+            }catch (Exception e){}
+            if (one_string_number >= oneLineNumber)
+                continue;
+            int offsetBlankNumber = oneLineNumber - one_string_number;
+            src.set(i,getOffsetString(one,offsetBlankNumber));
+        }
+        return src;
+    }
+
+    //获取前面加偏移的空格
+    public static String getOffsetString(String src,int offsetBlankNumber){
+        StringBuilder sb = new StringBuilder();
+        for (int j = 0; j < offsetBlankNumber; j++) {
+            sb.append(" ");
+        }
+        sb.append(src);
+        return sb.toString();
+    }
+
+
     public static byte fanWei(byte src){
         byte des = 0x00;
         for (int i = 0; i < 8 ; i++) {
@@ -1110,4 +1273,27 @@ public class EpsonPicture {
         return des;
     }
 
+    public static int getPrintWidth() {
+        int width = SomeBitMapHandleWay.PRINT_WIDTH;
+        String is_58 = SavePasswd.getInstace().getIp(SavePasswd.IS58PAPPER, "false");
+        if (is_58.equals("true")) {
+            width = SomeBitMapHandleWay.WIDTH_58;
+        }
+        return width;
+    }
+    public static Paint getPaint() {
+        Paint print = new Paint();
+        print.setColor(Color.BLACK);
+        print.setTextSize(FONT_SIZE);
+        print.setTypeface(Typeface.create(FONT_TYPE,Typeface.NORMAL));
+//        print.setFlags(Paint.LINEAR_TEXT_FLAG)  ;
+        return print;
+    }
+    public static Paint getPaint(PrintAndDatas printAndDatas) {
+        Paint print = new Paint();
+        print.setColor(Color.BLACK);
+        print.setTextSize(FONT_SIZE);
+        print.setTypeface(Typeface.create(FONT_TYPE,Typeface.NORMAL));
+        return print;
+    }
 }

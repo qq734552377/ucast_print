@@ -34,6 +34,7 @@ public class HandleEpsonDataByUcastPrint {
             printOne(string,isUpload);
         } catch (Exception e) {
             ExceptionApplication.gLogger.info("paser bitmap error ");
+            ExceptionApplication.gLogger.info(e.toString());
             e.printStackTrace();
         }
     }
@@ -64,6 +65,7 @@ public class HandleEpsonDataByUcastPrint {
                 MyTools.uploadDataAndFileWithURLByQueue(sb.toString(),path);
             }
         } catch (Exception e) {
+            ExceptionApplication.gLogger.info(e.toString());
             e.printStackTrace();
         }finally {
             return path;

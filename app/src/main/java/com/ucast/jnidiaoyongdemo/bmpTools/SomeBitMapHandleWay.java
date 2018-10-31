@@ -246,6 +246,8 @@ public class SomeBitMapHandleWay {
                 break;
             }
             Bitmap backBitMap = BitmapFactory.decodeFile(paths.get(i + 1));
+            if (backBitMap == null)
+                continue;
             allBitMap = SomeBitMapHandleWay.mergeBitmap_TB(allBitMap,backBitMap);
             if (backBitMap != null && !backBitMap.isRecycled()) {
                 backBitMap.recycle();

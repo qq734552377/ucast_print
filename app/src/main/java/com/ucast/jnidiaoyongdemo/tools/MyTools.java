@@ -368,11 +368,7 @@ public class MyTools {
                     }
                 }
                 if (linkMsg != null && !linkMsg.equals("")){
-                    int width = SomeBitMapHandleWay.PRINT_WIDTH;
-                    String is_58 = SavePasswd.getInstace().getIp(SavePasswd.IS58PAPPER,"false");
-                    if (is_58.equals("true")){
-                        width = SomeBitMapHandleWay.WIDTH_58;
-                    }
+                    int width = EpsonPicture.getPrintWidth();
                     linkBmp = MyTools.generateBitmap(linkMsg,width,width);
                     if (linkBmp != null)
                         ReadPictureManage.GetInstance().GetReadPicture(0).Add(new BitmapWithOtherMsg(linkBmp, false));
