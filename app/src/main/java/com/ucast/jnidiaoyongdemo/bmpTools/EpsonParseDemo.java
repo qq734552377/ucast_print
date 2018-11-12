@@ -841,7 +841,9 @@ public class EpsonParseDemo {
                                         int other_num = byteNum - space_num;
                                         int print_space_num = (print_width - other_num * one_data.bitWidthRate * EpsonPicture.FONT_SIZE / 2) / (one_data.bitWidthRate * EpsonPicture.FONT_SIZE / 2);
                                         StringBuilder sb = new StringBuilder();
-                                        sb.append(newData.substring(0, newData.indexOf(" ")));
+                                        int firstSpaceIndex = newData.indexOf(" ");
+                                        if (firstSpaceIndex != -1)
+                                            sb.append(newData.substring(0, firstSpaceIndex));
                                         for (int j = 0; j < print_space_num; j++) {
                                             sb.append(" ");
                                         }
