@@ -14,6 +14,7 @@ import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
+import android.net.wifi.WifiManager;
 import android.os.Environment;
 import android.os.IBinder;
 import android.os.SystemClock;
@@ -31,6 +32,8 @@ import com.ucast.jnidiaoyongdemo.advAct.AdvActivity;
 import com.ucast.jnidiaoyongdemo.tools.ExceptionApplication;
 import com.ucast.jnidiaoyongdemo.tools.MyTools;
 import com.ucast.jnidiaoyongdemo.tools.SystemUtils;
+import com.ucast.jnidiaoyongdemo.tools.WiFiUtil;
+import com.ucast.jnidiaoyongdemo.tools.WifiConnect;
 import com.ucast.jnidiaoyongdemo.xutilEvents.AdvActEvent;
 import com.ucast.jnidiaoyongdemo.xutilEvents.MediapalyEvent;
 import com.ucast.jnidiaoyongdemo.xutilEvents.MoneyBoxEvent;
@@ -56,6 +59,7 @@ import com.ucast.jnidiaoyongdemo.tools.SavePasswd;
 import com.ucast.jnidiaoyongdemo.tools.YinlianHttpRequestUrl;
 import com.ucast.jnidiaoyongdemo.xutilEvents.SysUsbSettingEvent;
 import com.ucast.jnidiaoyongdemo.xutilEvents.TishiMsgEvent;
+import com.ucast.jnidiaoyongdemo.xutilEvents.UdiskEvent;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
@@ -64,6 +68,7 @@ import org.xutils.common.Callback;
 import org.xutils.http.RequestParams;
 import org.xutils.x;
 
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -82,8 +87,11 @@ import io.netty.util.internal.SystemPropertyUtil;
 public class UpdateService extends Service {
 
     public static boolean connected;
+    WifiManager manager ;
+    WifiConnect wifiConnect ;
 
     private static final long MONEYBOXTISHITIME = 1000L * 8;
+    private static final long USBSTARTTIME = 1000L * 1;
     private static final long USBCHONGLIANTIME = 1000L * 60;
     private static long oldMoneyBoxTime ;
     private static long oldUSBChONGLIANTime ;
@@ -152,6 +160,7 @@ public class UpdateService extends Service {
         setCloseNetPrinterUploadToService(isCloseNetPrintUpload);
 
         registUsbBroadcast();
+        registMyBro();
         moneyBoxDialog = MyDialog.showIsOpenMoneyBoxDialog();
         moneyBoxDialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
             @Override
@@ -170,6 +179,9 @@ public class UpdateService extends Service {
 //        EventBus.getDefault().post(new SysUsbSettingEvent(true));
 
         initMedia();
+
+        manager = (WifiManager) this.getSystemService(Context.WIFI_SERVICE);
+        wifiConnect = new WifiConnect(manager);
     }
 
     public void initUSbAndKeyboard(){
@@ -293,6 +305,54 @@ public class UpdateService extends Service {
         intentFilter.addAction(MyUsbManager.ACTION_USB_STATE);
         registerReceiver(receiver, intentFilter);
     }
+    private BroadcastReceiver usbBroadReceiver;
+    public void registMyBro(){
+
+        usbBroadReceiver=new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                String action=intent.getAction();
+                String path = intent.getData().getPath();
+                if (action.equals(Intent.ACTION_MEDIA_MOUNTED)) {
+                    //usb连接
+                    EventBus.getDefault().post(new UdiskEvent(path));
+                }
+            }
+        };
+
+        //注册usb状态广播
+        IntentFilter usbFilter = new IntentFilter();
+        //未正确移除Sd卡
+        usbFilter.addAction(Intent.ACTION_MEDIA_BAD_REMOVAL);
+        //插入外部存储,如SD卡,系统会检测SD卡,测试发出的广播
+        usbFilter.addAction(Intent.ACTION_MEDIA_CHECKING);
+        //已拔出掉外部大容量存储设备发出的广播(SD卡,移动硬盘),不管有没有正确卸载都会发此广播
+        usbFilter.addAction(Intent.ACTION_MEDIA_EJECT);
+        //插入SD卡并且正确安装(识别)时发出的广播
+        usbFilter.addAction(Intent.ACTION_MEDIA_MOUNTED);
+        //扩展介质被移除
+        usbFilter.addAction(Intent.ACTION_MEDIA_REMOVED);
+        //开始扫描介质的一个目录
+        usbFilter.addAction(Intent.ACTION_MEDIA_SCANNER_STARTED);
+        //已经扫描完介质的一个目录
+        usbFilter.addAction(Intent.ACTION_MEDIA_SCANNER_FINISHED);
+        //扩展介质存在，但是还没有被挂载
+        usbFilter.addAction(Intent.ACTION_MEDIA_UNMOUNTED);
+        //扩展介质的挂载被解除，因为它已经作为 USB 大容量存储被共享。
+        usbFilter.addAction(Intent.ACTION_MEDIA_SHARED);
+        //设备进入 USB 大容量存储模式
+        usbFilter.addAction(Intent.ACTION_UMS_CONNECTED);
+        //设备从 USB 大容量存储模式退出
+        usbFilter.addAction(Intent.ACTION_UMS_CONNECTED);
+        usbFilter.addAction(Intent.ACTION_POWER_CONNECTED);
+        usbFilter.addAction(Intent.ACTION_POWER_DISCONNECTED);
+        usbFilter.addAction(UsbManager.ACTION_USB_DEVICE_ATTACHED);
+        usbFilter.addAction("android.hardware.usb.action.USB_STATE");
+
+
+        usbFilter.addDataScheme("file");
+        registerReceiver(usbBroadReceiver, usbFilter);
+    }
 
     public MyTimer timer;
     public MyTimer moneyBoxtimer;
@@ -356,7 +416,7 @@ public class UpdateService extends Service {
                     isFirstStartNum = 0;
                 }
             }
-        }), 1*1000L, 10*1000L);
+        }), USBSTARTTIME, 10*1000L);
         usbtimer.initMyTimer().startMyTimer();
     }
 
@@ -584,4 +644,44 @@ public class UpdateService extends Service {
         }
     }
 
+    @Subscribe(threadMode = ThreadMode.ASYNC)
+    public void setUdiskEvent(UdiskEvent event){
+        try{
+            File dir = new File(event.getPath());
+            if (dir.isDirectory()){
+                File[] listDir = dir.listFiles();
+                if (listDir.length > 0){
+                    String wifiPath = listDir[0].getAbsolutePath() + "/wifi.txt";
+                    String msg = MyTools.loadFileAsString(wifiPath);
+                    String[] msgArr = msg.split(",");
+                    if (msgArr.length < 2)
+                        return;
+                    String wifiName = msgArr[0];
+                    String password = msgArr[1];
+                    connectWifi(wifiName,password);
+                }
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+
+    private void connectWifi(String WIFI_NAME,String WIFI_PWD) {
+        if (!manager.isWifiEnabled()){
+            wifiConnect.openWifi();
+            try {
+                Thread.sleep(12000);
+            }catch (Exception e){
+
+            }
+        }
+        if (!WiFiUtil.isWifiConnect()){
+            wifiConnect.connect(WIFI_NAME,WIFI_PWD, WifiConnect.WifiCipherType.WIFICIPHER_WPA);
+        }
+        if (WiFiUtil.isWifiConnect() && WIFI_NAME.equals(WiFiUtil.getNowWiFiSSID())){
+            EventBus.getDefault().post(new MediapalyEvent(R.raw.wifisuccess));
+        }else{
+            wifiConnect.connect(WIFI_NAME,WIFI_PWD, WifiConnect.WifiCipherType.WIFICIPHER_WPA);
+        }
+    }
 }
