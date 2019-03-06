@@ -25,7 +25,6 @@ public class NetPrinterChannelMap {
     }
 
     public static void Remove(String key) {
-
         map.remove(key);
     }
     public static Set<Map.Entry<String, Channel>> ToList()

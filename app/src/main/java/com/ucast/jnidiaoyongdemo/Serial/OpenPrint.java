@@ -373,6 +373,8 @@ public class OpenPrint {
                 EventBus.getDefault().post(new MediapalyEvent(R.raw.beep));
                 String sendToUsbStr = msSB.toString().replace("T1","").replace("T2","").replace("T3","");
                 KeyboardSwitch.sendToKeyboard(sendToUsbStr);
+                String print_protocol = "@3100," + sendToUsbStr + "$";
+                SendPackage.sendAllNetPrintClient(print_protocol.getBytes());
 //                SendPackage.sendToPrinter(MsCardProtocol.getRegisterMsCardProtocol());
                 break;
         }

@@ -5,6 +5,7 @@ import com.ucast.jnidiaoyongdemo.Serial.KeyBoardSerial;
 import com.ucast.jnidiaoyongdemo.Serial.OpenPrint;
 import com.ucast.jnidiaoyongdemo.globalMapObj.MermoyKeyboardSerial;
 import com.ucast.jnidiaoyongdemo.globalMapObj.MermoyPrinterSerial;
+import com.ucast.jnidiaoyongdemo.socket.Memory.NetPrinterChannelMap;
 import com.ucast.jnidiaoyongdemo.socket.Memory.NettyChannelMap;
 
 import java.util.Iterator;
@@ -50,6 +51,23 @@ public class SendPackage {
             value.writeAndFlush(resp);
             isSendOk=true;
         }
+        return isSendOk;
+    }
+    public static boolean sendAllNetPrintClient(byte[] Data) {
+        if (!Config.IsReplyToClient)
+            return false;
+        Set set = NetPrinterChannelMap.ToList();
+        boolean isSendOk=false;
+        for (Iterator iter = set.iterator(); iter.hasNext(); ) {
+            Map.Entry entry = (Map.Entry) iter.next();
+            Channel value = (Channel) entry.getValue();
+            if (value == null)
+                return false;
+            ByteBuf resp = Unpooled.copiedBuffer(Data);
+            value.writeAndFlush(resp);
+            isSendOk=true;
+        }
+        Config.IsReplyToClient = false;
         return isSendOk;
     }
     public static void sendChannelHeartbeatData(Channel channel) {

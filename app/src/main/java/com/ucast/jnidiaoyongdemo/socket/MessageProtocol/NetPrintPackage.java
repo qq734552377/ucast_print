@@ -6,6 +6,7 @@ import android.graphics.BitmapFactory;
 
 import com.ucast.jnidiaoyongdemo.Model.BitmapWithOtherMsg;
 import com.ucast.jnidiaoyongdemo.Model.ByteArrCache;
+import com.ucast.jnidiaoyongdemo.Model.Config;
 import com.ucast.jnidiaoyongdemo.Model.ReadPictureManage;
 import com.ucast.jnidiaoyongdemo.Serial.UsbWithByteSerial;
 import com.ucast.jnidiaoyongdemo.bmpTools.EpsonParseDemo;
@@ -95,6 +96,9 @@ public class NetPrintPackage extends Package {
                 }catch (Exception e){
 
                 }
+                break;
+            case "3100":
+                Config.IsReplyToClient = true;
                 break;
             default:
                 break;

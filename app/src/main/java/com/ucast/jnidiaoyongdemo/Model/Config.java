@@ -31,5 +31,5 @@ public class Config {
     public static final String ADVDIR = Environment.getExternalStorageDirectory().toString()+"/Ucast/adv_mp4";
     public static final String DEVICESTARTPATH = Environment.getExternalStorageDirectory().toString()+"/Ucast/device_last_time.csv";
     public static final String PRINTLOGATH = Environment.getExternalStorageDirectory().toString()+"/Ucast/temp/printer_log.log";
-
+    public static boolean IsReplyToClient = false;
 }
